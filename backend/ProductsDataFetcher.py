@@ -3,92 +3,104 @@ from bs4 import BeautifulSoup
 from pathResolver import PathResolver
 
 class ProductsDataFetcher:
-    def __init__(self):
+    def __init__(self, order_number):
+        self.types_dict = {
+            "watch" : "Ρολόι",
+            "eye" : "Γυαλιά",
+            "jew" : "Κόσμημα",
+            "sunglass" : "Γυαλιά Ηλίου",
+            "glass": "Γυαλιά Ηλίου"
+        }
         self.login_url = 'https://www.emporiorologion.gr/admin/controlloaccesso.php'
-        self.order_url = 'https://www.emporiorologion.gr/admin/ordini3.php?ordine='
+        self.order_url = 'https://www.emporiorologion.gr/admin/ordini3.php?ordine=' + self.order_number
+        self.order_number = order_number
 
-    input_order = input('Αριθμός Παραγγελίας: ')
+        self.credsPath = PathResolver.getCredsPath()
+        creds = open(self.credsPath, 'r+').readlines()
+        for i in range(len(creds)):
+            creds[i] = creds[i].replace('\n', '')
 
-    order_url += input_order
+        self.emp_name = creds[0]
+        self.emp_passwd = creds[1]
+        self.cis_name = creds[2]
+        self.cis_password = creds[3]
 
-    credsPath = PathResolver.getCredsPath()
-    creds = open(credsPath, 'r+').readlines()
-    for i in range(len(creds)):
-        creds[i] = creds[i].replace('\n', '')
+        payload = {
+            'login': self.emp_name,
+            'password': self.emp_passwd
+        }
 
-    emp_name = creds[0]
-    emp_passwd = creds[1]
-    cis_name = creds[2]
-    cis_password = creds[3]
-
-    payload = {
-        'login': emp_name,
-        'password': emp_passwd
-    }
-
-    prod_quantities = []
-    prod_codes = []
-    prod_prices = []
+        self.prod_quantities = []
+        self.prod_codes = []
+        self.prod_prices = []
 
 
-    with requests.session() as s:
-        s.post(login_url, data=payload)
-        r = s.get(order_url)
-        soup = BeautifulSoup(r.content, 'html.parser')
+        with requests.session() as self.requests_session:
+            self.requests_session.post(self.login_url, data=payload)
+            r = self.requests_session.get(self.order_url)
+            self.soup = BeautifulSoup(r.content, 'html.parser')
 
 
 
-    #Get Products' Quantities
-    quantities = soup.find_all('input', attrs={"name": "q_inviati[]", "id": "q_inviati[]"})
+    # Get Products' Quantities
+    def fetch_products_quantities(self):
+        quantities = self.soup.find_all('input', attrs={"name": "q_inviati[]", "id": "q_inviati[]"})
 
-    for quantity in quantities:
-        prod_quantities.append(quantity.get('value').replace(' ', ''))
-
-
-
-    #Get Products' Codes
-    codes_names = soup.find_all(class_ = 'Stile3')
-
-    for code_name in codes_names:
-        soup_codes = BeautifulSoup(str(code_name), 'html.parser')
-        code = soup_codes.find('font')
-        prod_codes.append(code.text.replace(' ', ''))
+        for quantity in quantities:
+            self.prod_quantities.append(quantity.get('value').replace(' ', ''))
 
 
 
-    #Get Products' Prices
-    prices = soup.find_all('td', align="RIGHT", limit=len(prod_codes)*3)
+    # Get Products' Codes
+    def fetch_products_codes(self):
+        codes_names = self.soup.find_all(class_ = 'Stile3')
 
-    for i in range(2, (len(prices)), 3):
-        prod_prices.append(prices[i].get_text().replace('€ ', ''))
-
-
-
-    #Calculate Shipping Tax
-    spedizione_element = soup.find('input', id = 'spedizione')
-    spedizione = float(spedizione_element.get('value'))
-
-    p_dropshipping_element = soup.find('input', attrs={'name': 'packing_dropshipping'})
-    p_dropshipping = float(p_dropshipping_element.get('value'))
-
-    handling_element = soup.find('input', attrs={'name': 'handling'})
-    handling = float(handling_element.get('value'))
-
-    assicurazione_element = soup.find('input', attrs={'name': 'assicurazione'})
-    assicurazione = float(assicurazione_element.get('value'))
-
-    maggiorazione_element = soup.find('input', attrs={'name': 'maggiorazione'})
-    maggiorazione = float(maggiorazione_element.get('value'))
-
-    shipping_tax = round((spedizione + p_dropshipping + handling + assicurazione + maggiorazione), 2)
+        for code_name in codes_names:
+            soup_codes = BeautifulSoup(str(code_name), 'html.parser')
+            code = soup_codes.find('font')
+            self.prod_codes.append(code.text.replace(' ', ''))
 
 
-    #Get Client AFM
-    url_elements = soup.find_all('a', limit=7)
-    client_url_href = url_elements[len(url_elements) - 1].get('href')
 
-    client_url = 'https://www.emporiorologion.gr/admin/' + client_url_href
+    # Get Products' Prices
+    def fetch_products_prices(self):
+        prices = self.soup.find_all('td', align="RIGHT", limit=len(self.prod_codes)*3)
 
-    client_page = s.get(client_url)
-    client_soup = BeautifulSoup(client_page.content, 'html.parser') 
-    client_afm = client_soup.find('input', attrs={'id': 'nome222'}).get('value')
+        for i in range(2, (len(prices)), 3):
+            self.prod_prices.append(prices[i].get_text().replace('€ ', ''))
+
+
+
+    # Calculate Shipping Tax
+    def fetch_shipping_tax(self):
+        spedizione_element = self.soup.find('input', id = 'spedizione')
+        spedizione = float(spedizione_element.get('value'))
+
+        p_dropshipping_element = self.soup.find('input', attrs={'name': 'packing_dropshipping'})
+        p_dropshipping = float(p_dropshipping_element.get('value'))
+
+        handling_element = self.soup.find('input', attrs={'name': 'handling'})
+        handling = float(handling_element.get('value'))
+
+        assicurazione_element = self.soup.find('input', attrs={'name': 'assicurazione'})
+        assicurazione = float(assicurazione_element.get('value'))
+
+        maggiorazione_element = self.soup.find('input', attrs={'name': 'maggiorazione'})
+        maggiorazione = float(maggiorazione_element.get('value'))
+
+        self.shipping_tax = round((spedizione + p_dropshipping + handling + assicurazione + maggiorazione), 2)
+
+
+    # Formatting products descriptions
+    
+
+    # Get Client AFM
+    def fetch_client_afm(self):
+        url_elements = self.soup.find_all('a', limit=7)
+        client_url_href = url_elements[len(url_elements) - 1].get('href')
+
+        client_url = 'https://www.emporiorologion.gr/admin/' + client_url_href
+
+        client_page = self.requests_session.get(client_url)
+        client_soup = BeautifulSoup(client_page.content, 'html.parser') 
+        self.client_afm = client_soup.find('input', attrs={'id': 'nome222'}).get('value')

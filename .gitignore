@@ -1,2 +1,2 @@
 creds.txt
-backend/data.db
+*.db

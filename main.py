@@ -5,7 +5,6 @@ from backend.pathResolver import PathResolver
 from backend.db import DB
 
 def main():
-    print(PathResolver.get_db_path())
     db = DB()
 
 if __name__ == '__main__':
