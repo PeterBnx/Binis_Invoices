@@ -8,4 +8,4 @@ class PathResolver:
 
     @staticmethod
     def get_db_path():
-        return PathResolver.get_project_path() + 'data.db'
+        return PathResolver.get_project_path() + 'backend\\' + 'data.db'
