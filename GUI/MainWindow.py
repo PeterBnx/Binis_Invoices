@@ -1,6 +1,7 @@
 from CustomDialog import CustomDialog
+from OrderRow import OrderRow
 import sys
-from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QLabel, QLineEdit, QGridLayout, QWidget
+from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QLabel, QLineEdit, QVBoxLayout, QWidget
 from PyQt6.QtCore import Qt
 
 class MainWindow(QMainWindow):
@@ -8,14 +9,10 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setGeometry(200, 200, 400, 400)
         self.central_widget = QWidget(self)
-        self.grid_layout = QGridLayout()
-        self.label = QLabel("Εισαγωγή Παραγγελίας:")
-        self.text = QLineEdit(self)
-        self.button = QPushButton("Αναζήτηση", self)
+        self.v_layout = QVBoxLayout()
         self.initUI()
 
     def initUI(self):
-        self.setHandlers()
         self.setGeometry(500, 500, 400, 400)
         self.setCentralWidget(self.central_widget)
 
@@ -23,23 +20,16 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Τιμολόγια Μπινής')
 
         # Set Layout
-        self.grid_layout.addWidget(self.label, 0, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
-        self.grid_layout.addWidget(self.text, 1, 0)
-        self.grid_layout.addWidget(self.button, 1, 1)
-        self.central_widget.setLayout(self.grid_layout)
+        order_row = OrderRow("11111", "Πελάτης", "12/10/2025", self)
+        order_row.clicked.connect(lambda: self.order_row_clicked(order_row.order_number_text.text()))
+        self.v_layout.addWidget(order_row)
 
-        # Set Line Edit
-        self.text.setPlaceholderText('Αριμός Παραγγελίας')
-
-    def setHandlers(self):
-        self.button.clicked.connect(self.buttonSearchHandler)
+        self.central_widget.setLayout(self.v_layout)
 
     # Handlers
-    def buttonSearchHandler(self):
-        order_text = self.text.text()
-        if (not order_text.isnumeric()):
-            error_dialog = CustomDialog('Η παραγγελία πρέπει να αποτελείται μόνο από αριθμούς', self, 'Προσοχή!')
-            error_dialog.show()
+
+    def order_row_clicked(self, order_number):
+        print(order_number)
 
 if __name__=='__main__':
     app = QApplication(sys.argv)
