@@ -1,38 +1,43 @@
-from CustomDialog import CustomDialog
-from OrderRow import OrderRow
-import sys
-from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QLabel, QLineEdit, QVBoxLayout, QWidget
-from PyQt6.QtCore import Qt
+from backend.OrdersDataFetcher import OrdersDataFetcher
+from GUI.CustomDialog import CustomDialog
+from GUI.OrderRow import OrderRow
+from functools import partial
+from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QScrollArea
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setGeometry(200, 200, 400, 400)
-        self.central_widget = QWidget(self)
+        self.scroll_widget = QWidget()
         self.v_layout = QVBoxLayout()
+        self.scroll_area = QScrollArea()
+        self.orders_data_fetcher = OrdersDataFetcher()
         self.initUI()
 
     def initUI(self):
         self.setGeometry(500, 500, 400, 400)
-        self.setCentralWidget(self.central_widget)
 
         # Set Window
         self.setWindowTitle('Τιμολόγια Μπινής')
 
-        # Set Layout
-        order_row = OrderRow("11111", "Πελάτης", "12/10/2025", self)
-        order_row.clicked.connect(lambda: self.order_row_clicked(order_row.order_number_text.text()))
-        self.v_layout.addWidget(order_row)
+        # Set Scroll Area
+        self.scroll_area.setWidgetResizable(True)
+        self.setCentralWidget(self.scroll_area)
+        self.scroll_area.setWidget(self.scroll_widget)
 
-        self.central_widget.setLayout(self.v_layout)
+
+        # Set Layout
+        for i in range(len(self.orders_data_fetcher.order_elements)):
+            order_number_text = self.orders_data_fetcher.order_elements[i]
+            client_text = self.orders_data_fetcher.client_elements[i]
+            date_text = self.orders_data_fetcher.date_elements[i]
+            order_row = OrderRow(order_number_text, client_text, date_text, self)
+            order_row.clicked.connect(partial(self.order_row_clicked, order_number_text))
+            self.v_layout.addWidget(order_row)
+
+        self.scroll_widget.setLayout(self.v_layout)
 
     # Handlers
 
     def order_row_clicked(self, order_number):
         print(order_number)
-
-if __name__=='__main__':
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())

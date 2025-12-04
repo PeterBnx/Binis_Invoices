@@ -11,5 +11,5 @@ class PathResolver:
         return PathResolver.get_project_path() + 'backend\\' + 'data.db'
     
     @staticmethod
-    def getCredsPath():
+    def get_creds_path():
         return PathResolver.get_project_path() + 'backend\\' + 'creds.txt'

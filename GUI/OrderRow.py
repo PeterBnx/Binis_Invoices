@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout
-from PyQt6.QtCore import Qt, pyqtSignal, QRect
-from PyQt6.QtGui import QPainter, QColor, QFont, QPen
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QPainter, QColor
 
 
 class OrderRow(QWidget):

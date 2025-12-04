@@ -1,11 +1,12 @@
 import sys
-sys.dont_write_bytecode = True #testing
-sys.path.insert(0, './backend')
-from backend.pathResolver import PathResolver
-from backend.db import DB
+from PyQt6.QtWidgets import QApplication
+from GUI.MainWindow import MainWindow
 
 def main():
-    db = DB()
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec())
 
 if __name__ == '__main__':
     main()

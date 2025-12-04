@@ -1,4 +1,4 @@
-import requests
+from Shared import shared_instance
 from bs4 import BeautifulSoup
 from pathResolver import PathResolver
 
@@ -11,34 +11,16 @@ class ProductsDataFetcher:
             "sunglass" : "Γυαλιά Ηλίου",
             "glass": "Γυαλιά Ηλίου"
         }
-        self.login_url = 'https://www.emporiorologion.gr/admin/controlloaccesso.php'
-        self.order_url = 'https://www.emporiorologion.gr/admin/ordini3.php?ordine=' + self.order_number
         self.order_number = order_number
-
-        self.credsPath = PathResolver.getCredsPath()
-        creds = open(self.credsPath, 'r+').readlines()
-        for i in range(len(creds)):
-            creds[i] = creds[i].replace('\n', '')
-
-        self.emp_name = creds[0]
-        self.emp_passwd = creds[1]
-        self.cis_name = creds[2]
-        self.cis_password = creds[3]
-
-        payload = {
-            'login': self.emp_name,
-            'password': self.emp_passwd
-        }
+        self.order_url =  shared_instance.orders_page_url + self.order_number
 
         self.prod_quantities = []
         self.prod_codes = []
         self.prod_prices = []
 
-
-        with requests.session() as self.requests_session:
-            self.requests_session.post(self.login_url, data=payload)
-            r = self.requests_session.get(self.order_url)
-            self.soup = BeautifulSoup(r.content, 'html.parser')
+        shared_instance.session.post(shared_instance.login_url, data=shared_instance.payload)
+        r = shared_instance.session.get(self.order_url)
+        self.soup = BeautifulSoup(r.content, 'html.parser')
 
 
 
