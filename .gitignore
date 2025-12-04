@@ -1,3 +1,4 @@
 creds.txt
 *.db
 .binis_venv
+__pycache__
