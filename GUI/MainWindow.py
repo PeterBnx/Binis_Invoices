@@ -1,4 +1,5 @@
 from backend.OrdersDataFetcher import OrdersDataFetcher
+from backend.ProductsDataFetcher import ProductsDataFetcher
 from GUI.CustomDialog import CustomDialog
 from GUI.OrderRow import OrderRow
 from functools import partial
@@ -40,5 +41,5 @@ class MainWindow(QMainWindow):
 
     # Handlers
 
-    def order_row_clicked(self, order_number):
-        print(order_number)
+    def order_row_clicked(self, order_number: str):
+        self.products_data_fetcher = ProductsDataFetcher(str(order_number).strip())

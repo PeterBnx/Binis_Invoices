@@ -1,5 +1,5 @@
 import sqlite3
-from pathResolver import PathResolver
+from backend.pathResolver import PathResolver
 
 class DB:
     _instance = None
@@ -85,6 +85,7 @@ class DB:
 
     def get_all_brands(self):
         return self.fetch_all("SELECT * FROM brands ORDER BY id")
+
 
     def get_brand_by_id(self, brand_id):
         rows = self.fetch_all("SELECT * FROM brands WHERE id = ?", (brand_id,))

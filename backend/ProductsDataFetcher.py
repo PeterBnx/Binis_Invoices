@@ -1,6 +1,9 @@
-from Shared import shared_instance
+from backend.Shared import shared_instance
+from backend.db import DB
 from bs4 import BeautifulSoup
-from pathResolver import PathResolver
+from backend.pathResolver import PathResolver
+import pandas as pd
+import io
 
 class ProductsDataFetcher:
     def __init__(self, order_number):
@@ -12,15 +15,27 @@ class ProductsDataFetcher:
             "glass": "Γυαλιά Ηλίου"
         }
         self.order_number = order_number
-        self.order_url =  shared_instance.emp_orders_page_url + self.order_number
+        self.order_url =  'https://www.emporiorologion.gr/admin/ordini3.php?ordine=' + self.order_number
 
         self.prod_quantities = []
         self.prod_codes = []
         self.prod_prices = []
+        self.prod_descriptions = []
+        self.prod_is_registered = []
 
         shared_instance.session.post(shared_instance.emp_login_url, data=shared_instance.emp_payload)
         r = shared_instance.session.get(self.order_url)
         self.soup = BeautifulSoup(r.content, 'html.parser')
+
+        self.fetch_products_quantities()
+        self.fetch_products_codes()
+        self.fetch_products_prices()
+        self.fetch_products_is_registered()
+        self.fetch_products_descriptions()
+        self.fetch_shipping_tax()
+        self.fetch_client_afm()
+
+        self.print_products_data()
 
 
 
@@ -42,8 +57,6 @@ class ProductsDataFetcher:
             code = soup_codes.find('font')
             self.prod_codes.append(code.text.replace(' ', ''))
 
-
-
     # Get Products' Prices
     def fetch_products_prices(self):
         prices = self.soup.find_all('td', align="RIGHT", limit=len(self.prod_codes)*3)
@@ -51,6 +64,32 @@ class ProductsDataFetcher:
         for i in range(2, (len(prices)), 3):
             self.prod_prices.append(prices[i].get_text().replace('€ ', ''))
 
+
+    # For each item, check if it is registered
+    def fetch_products_is_registered(self):
+        shared_instance.session.post(shared_instance.cis_login_url, data=shared_instance.cis_payload)
+        response = shared_instance.session.get(shared_instance.cis_items_url)
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        def get_value(name):
+            tag = soup.find("input", {"name": name})
+            return tag['value'] if tag else ""
+
+        payload = {
+            "__EVENTTARGET": "ctl00$MainContent$gv1$imgExport",  # export button
+            "__EVENTARGUMENT": "",
+            "__VIEWSTATE": get_value("__VIEWSTATE"),
+            "__VIEWSTATEGENERATOR": get_value("__VIEWSTATEGENERATOR"),
+            "__EVENTVALIDATION": get_value("__EVENTVALIDATION")
+        }
+
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        export_response = shared_instance.session.post(shared_instance.cis_items_url, data=payload, headers=headers)
+        df = pd.read_excel(io.BytesIO(export_response.content))
+
+        all_cis_codes = [item.strip().strip('\\t') for item in df['Κωδικός']]
+        for prod_code in self.prod_codes:
+            self.prod_is_registered.append(prod_code in all_cis_codes)
 
 
     # Calculate Shipping Tax
@@ -74,6 +113,69 @@ class ProductsDataFetcher:
 
 
     # Formatting products descriptions
+    def fetch_products_descriptions(self): #!!! NEED IMPROVEMENT FOR CREATING DESCRIPTION IF ITEM IS REGISTERED
+        db = DB()
+        brands_quantities = []
+        brands = []
+        brands_dict = {item[1]: item[2] for item in db.get_all_brands()}
+
+        # Get brands elements texts
+        brands_elements = self.soup.find_all(class_ = 'Stile11')
+
+        values = self.soup.find_all('font', attrs={'size': '2', 'face' : 'trebuchet MS'})
+
+        for code in values:
+            if '€' not in code.get_text():
+                brands_quantities.append(code.get_text())
+
+        for brand in brands_elements:
+            brands.append(brand.get_text())
+
+        #Formatting brands_types (what is the type of every brand in the order)
+        brands_types = []
+        for i in range(len(brands)):
+            is_watch = True
+            for type in list(self.types_dict.keys()):
+                if type in brands[i].lower():
+                    brands_types.append(self.types_dict[type])
+                    is_watch = False
+                    break
+            if is_watch:
+                brands_types.append('Ρολόι')
+
+        #Formatting brands list (keeping only the name of the brand) 
+        for i in range(len(brands)):
+            for name in list(brands_dict.keys()):
+                if name in brands[i]:
+                    brands[i] = brands_dict[name]
+                    break
+
+        #Creating brand_descriptions (the general brand description for its items)
+        brand_descriptions = []
+
+        for i in range(len(brands_types)):
+            brand_descriptions.append(brands_types[i] + " " + brands[i])
+
+
+        #Assigning every item to its brand and creating the final description for every item
+        j = 0
+        for i in range(len(brands_quantities)):
+            counter = 0
+            
+            while (counter + int(self.prod_quantities[j]) <= int(brands_quantities[i])):
+                self.prod_descriptions.append(brand_descriptions[i])
+                counter += int(self.prod_quantities[j])
+                j+=1
+
+                if j == len(self.prod_quantities) - 1:
+                    break
+
+        if len(brands_quantities) > 0:
+            for u in range(j, len(self.prod_codes)):
+                self.prod_descriptions.append(brand_descriptions[i+1])
+        else:
+            for u in range(j, len(self.prod_codes)):
+                self.prod_descriptions.append(brand_descriptions[i])
     
 
     # Get Client AFM
@@ -83,6 +185,16 @@ class ProductsDataFetcher:
 
         client_url = 'https://www.emporiorologion.gr/admin/' + client_url_href
 
-        client_page = self.requests_session.get(client_url)
+        client_page = shared_instance.session.get(client_url)
         client_soup = BeautifulSoup(client_page.content, 'html.parser') 
         self.client_afm = client_soup.find('input', attrs={'id': 'nome222'}).get('value')
+
+
+        #printing
+    def print_products_data(self):
+        print('Client AFM:', self.client_afm)
+        print('Number of order:', self.order_number)
+
+        for i in range(len(self.prod_codes)):
+            if(self.prod_quantities[i] != '0'):
+                print('%-5s'%self.prod_quantities[i], '%-20s'%self.prod_codes[i], '%-20s'%self.prod_descriptions[i], '%10s'%self.prod_prices[i], '%5s'%self.prod_is_registered[i])
