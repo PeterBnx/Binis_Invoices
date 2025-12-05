@@ -15,6 +15,7 @@ class MainWindow(QMainWindow):
         self.initUI()
 
     def initUI(self):
+        
         self.setGeometry(500, 500, 400, 400)
 
         # Set Window

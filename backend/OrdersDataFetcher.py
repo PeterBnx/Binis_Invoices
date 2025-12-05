@@ -4,9 +4,17 @@ from backend.Shared import shared_instance
 
 class OrdersDataFetcher():
     def __init__(self):
-        shared_instance.session.post(shared_instance.login_url, data=shared_instance.payload)
+        shared_instance.session.post(shared_instance.cis_login_url, data=shared_instance.cis_payload)
+        response = shared_instance.session.get(shared_instance.cis_items_url)
+        self.soup = BeautifulSoup(response.content, 'html.parser')
+        print("Login page detected:", "ctl00$MainContent$ddlSelectQuery" in response.text)
 
-        response = shared_instance.session.get(shared_instance.orders_page_url)
+
+
+
+        shared_instance.session.post(shared_instance.emp_login_url, data=shared_instance.emp_payload)
+
+        response = shared_instance.session.get(shared_instance.emp_orders_page_url)
         self.soup = BeautifulSoup(response.content, 'html.parser')
 
         order_pattern = compile(r"ordini3\.php\?ordine=\d+")

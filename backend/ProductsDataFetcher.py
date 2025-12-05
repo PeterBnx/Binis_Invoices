@@ -12,13 +12,13 @@ class ProductsDataFetcher:
             "glass": "Γυαλιά Ηλίου"
         }
         self.order_number = order_number
-        self.order_url =  shared_instance.orders_page_url + self.order_number
+        self.order_url =  shared_instance.emp_orders_page_url + self.order_number
 
         self.prod_quantities = []
         self.prod_codes = []
         self.prod_prices = []
 
-        shared_instance.session.post(shared_instance.login_url, data=shared_instance.payload)
+        shared_instance.session.post(shared_instance.emp_login_url, data=shared_instance.emp_payload)
         r = shared_instance.session.get(self.order_url)
         self.soup = BeautifulSoup(r.content, 'html.parser')
 
