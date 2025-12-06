@@ -6,7 +6,7 @@ import pandas as pd
 import io
 
 class ProductsDataFetcher:
-    def __init__(self, order_number):
+    def __init__(self):
         self.types_dict = {
             "watch" : "Ρολόι",
             "eye" : "Γυαλιά",
@@ -14,8 +14,6 @@ class ProductsDataFetcher:
             "sunglass" : "Γυαλιά Ηλίου",
             "glass": "Γυαλιά Ηλίου"
         }
-        self.order_number = order_number
-        self.order_url =  'https://www.emporiorologion.gr/admin/ordini3.php?ordine=' + self.order_number
 
         self.prod_quantities = []
         self.prod_codes = []
@@ -23,6 +21,10 @@ class ProductsDataFetcher:
         self.prod_descriptions = []
         self.prod_is_registered = []
 
+
+    def fetch_order_products_data(self, order_number):
+        self.order_number = order_number
+        self.order_url =  'https://www.emporiorologion.gr/admin/ordini3.php?ordine=' + self.order_number
         shared_instance.session.post(shared_instance.emp_login_url, data=shared_instance.emp_payload)
         r = shared_instance.session.get(self.order_url)
         self.soup = BeautifulSoup(r.content, 'html.parser')
@@ -36,7 +38,6 @@ class ProductsDataFetcher:
         self.fetch_client_afm()
 
         self.print_products_data()
-
 
 
     # Get Products' Quantities
