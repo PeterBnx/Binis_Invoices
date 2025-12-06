@@ -1,12 +1,8 @@
 from backend.pathResolver import PathResolver
 from requests import Session
 from bs4 import BeautifulSoup
-from urllib.parse import quote
-
-greek = "Είδος"  # this is what the encoded bytes represent
-encoded = quote(greek, encoding="cp1253")
-
-
+import pandas as pd
+import io
 
 class Shared:
     def __init__(self):
@@ -43,5 +39,30 @@ class Shared:
 
             'ctl00$MainContent$Button1': 'Login'
         }
+        self.all_cis_registered_codes = self.get_all_registered_products()
+
+    def get_all_registered_products(self):
+        self.session.post(self.cis_login_url, data=self.cis_payload)
+        response = self.session.get(self.cis_items_url)
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        def get_value(name):
+            tag = soup.find("input", {"name": name})
+            return tag['value'] if tag else ""
+
+        payload = {
+            "__EVENTTARGET": "ctl00$MainContent$gv1$imgExport",  # export button
+            "__EVENTARGUMENT": "",
+            "__VIEWSTATE": get_value("__VIEWSTATE"),
+            "__VIEWSTATEGENERATOR": get_value("__VIEWSTATEGENERATOR"),
+            "__EVENTVALIDATION": get_value("__EVENTVALIDATION")
+        }
+
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        export_response = self.session.post(self.cis_items_url, data=payload, headers=headers)
+        df = pd.read_excel(io.BytesIO(export_response.content))
+
+        all_cis_codes = [item.strip().strip('\\t') for item in df['Κωδικός']]
+        return all_cis_codes
 
 shared_instance = Shared()

@@ -67,29 +67,8 @@ class ProductsDataFetcher:
 
     # For each item, check if it is registered
     def fetch_products_is_registered(self):
-        shared_instance.session.post(shared_instance.cis_login_url, data=shared_instance.cis_payload)
-        response = shared_instance.session.get(shared_instance.cis_items_url)
-        soup = BeautifulSoup(response.content, 'html.parser')
-
-        def get_value(name):
-            tag = soup.find("input", {"name": name})
-            return tag['value'] if tag else ""
-
-        payload = {
-            "__EVENTTARGET": "ctl00$MainContent$gv1$imgExport",  # export button
-            "__EVENTARGUMENT": "",
-            "__VIEWSTATE": get_value("__VIEWSTATE"),
-            "__VIEWSTATEGENERATOR": get_value("__VIEWSTATEGENERATOR"),
-            "__EVENTVALIDATION": get_value("__EVENTVALIDATION")
-        }
-
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        export_response = shared_instance.session.post(shared_instance.cis_items_url, data=payload, headers=headers)
-        df = pd.read_excel(io.BytesIO(export_response.content))
-
-        all_cis_codes = [item.strip().strip('\\t') for item in df['Κωδικός']]
         for prod_code in self.prod_codes:
-            self.prod_is_registered.append(prod_code in all_cis_codes)
+            self.prod_is_registered.append(prod_code in shared_instance.all_cis_registered_codes)
 
 
     # Calculate Shipping Tax
