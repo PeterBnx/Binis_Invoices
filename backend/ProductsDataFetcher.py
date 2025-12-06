@@ -23,6 +23,7 @@ class ProductsDataFetcher:
 
 
     def fetch_order_products_data(self, order_number):
+        print(order_number)
         self.order_number = order_number
         self.order_url =  'https://www.emporiorologion.gr/admin/ordini3.php?ordine=' + self.order_number
         shared_instance.session.post(shared_instance.emp_login_url, data=shared_instance.emp_payload)
@@ -182,6 +183,13 @@ class ProductsDataFetcher:
         client_soup = BeautifulSoup(client_page.content, 'html.parser') 
         self.client_afm = client_soup.find('input', attrs={'id': 'nome222'}).get('value')
 
+
+    def reset_fetcher(self):
+        self.prod_quantities.clear()
+        self.prod_codes.clear()
+        self.prod_descriptions.clear()
+        self.prod_prices.clear()
+        self.prod_is_registered.clear()
 
         #printing
     def print_products_data(self):

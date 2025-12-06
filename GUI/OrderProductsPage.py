@@ -4,14 +4,7 @@ class OrderProductsPage(QWidget):
     def __init__(self, main_window):
         super().__init__()
         self.main_window = main_window
-
-        # Products Labels
-        self.quantity_labels = []
-        self.code_labels = []
-        self.description_labels = []
-        self.price_labels = []
-        self.is_registered_labels = []
-
+        
         # Row widgets
         self.row_widgets = []
 
@@ -27,16 +20,9 @@ class OrderProductsPage(QWidget):
         self.back_btn = QPushButton('Πίσω')
 
 
-    def showEvent(self, event):
-        super().showEvent(event)
-
-
-        # Now you can use:
-        # products_fetcher.product_names
-        # products_fetcher.product_prices
-        # etc
-
     def initUI(self, products_data_fetcher):
+        self.products_data_fetcher = products_data_fetcher
+
         # Set Back Button
         self.gen_layout.addWidget(self.back_btn)
         self.back_btn.clicked.connect(self.on_back_btn_click)
@@ -70,11 +56,7 @@ class OrderProductsPage(QWidget):
         layout.addWidget(description_label)
         layout.addWidget(price_label)
         layout.addWidget(is_registered_label)
-        # self.quantity_labels.append(quantity_label)
-        # self.code_labels.append(code_label)
-        # self.description_labels.append(description_label)
-        # self.price_labels.append(price_label)
-        # self.is_registered_labels.append(is_registered_label)
+
         row_widget = QWidget()
         row_widget.setLayout(layout)
         self.row_widgets.append(row_widget)
@@ -82,7 +64,24 @@ class OrderProductsPage(QWidget):
     def set_order_products_page(self, products_data_fetcher):
         self.initUI(products_data_fetcher)
 
+    def reset_order_products_page(self):
+        self.quantity_labels.clear()
+        self.code_labels.clear()
+        self.description_labels.clear()
+        self.price_labels.clear()
+        self.is_registered_labels.clear()
+        self.row_widgets.clear()
+
+        for i in reversed(range(self.scroll_layout.count())): 
+            self.scroll_layout.itemAt(i).widget().setParent(None)
+
+        for i in reversed(range(self.gen_layout.count())): 
+            self.gen_layout.itemAt(i).widget().setParent(None)
+
+
     
     # Button Handlers
     def on_back_btn_click(self):
+        self.reset_order_products_page()
+        self.products_data_fetcher.reset_fetcher()
         self.main_window.go_to_orders_page()
