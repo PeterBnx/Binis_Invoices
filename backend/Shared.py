@@ -39,7 +39,7 @@ class Shared:
 
             'ctl00$MainContent$Button1': 'Login'
         }
-        self.all_cis_registered_codes = self.get_all_registered_products()
+        self.all_cis_registered_codes, self.all_cis_registered_descriptions = self.get_all_registered_products()
 
     def get_all_registered_products(self):
         self.session.post(self.cis_login_url, data=self.cis_payload)
@@ -63,6 +63,8 @@ class Shared:
         df = pd.read_excel(io.BytesIO(export_response.content))
 
         all_cis_codes = [item.strip().strip('\\t') for item in df['Κωδικός']]
-        return all_cis_codes
+        all_cis_descriptions = [item.strip() for item in df['Περιγραφή']]
+
+        return all_cis_codes, all_cis_descriptions
 
 shared_instance = Shared()

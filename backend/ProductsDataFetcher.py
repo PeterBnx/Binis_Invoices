@@ -142,7 +142,12 @@ class ProductsDataFetcher:
             counter = 0
             
             while (counter + int(self.prod_quantities[j]) <= int(brands_quantities[i])):
-                self.prod_descriptions.append(brand_descriptions[i])
+                # Searching if item exists in registered products to get the description from there
+                try:
+                    index = shared_instance.all_cis_registered_codes.index(self.prod_codes[len(self.prod_descriptions)])
+                    self.prod_descriptions.append(shared_instance.all_cis_registered_descriptions[index])
+                except ValueError:
+                    self.prod_descriptions.append(brand_descriptions[i])
                 counter += int(self.prod_quantities[j])
                 j+=1
 
@@ -151,10 +156,18 @@ class ProductsDataFetcher:
 
         if len(brands_quantities) > 0:
             for u in range(j, len(self.prod_codes)):
-                self.prod_descriptions.append(brand_descriptions[i+1])
+                try:
+                    index = shared_instance.all_cis_registered_codes.index(self.prod_codes[len(self.prod_descriptions)])
+                    self.prod_descriptions.append(shared_instance.all_cis_registered_descriptions[index])
+                except ValueError:
+                    self.prod_descriptions.append(brand_descriptions[i])
         else:
             for u in range(j, len(self.prod_codes)):
-                self.prod_descriptions.append(brand_descriptions[i])
+                try:
+                    index = shared_instance.all_cis_registered_codes.index(self.prod_codes[len(self.prod_descriptions)])
+                    self.prod_descriptions.append(shared_instance.all_cis_registered_descriptions[index])
+                except ValueError:
+                    self.prod_descriptions.append(brand_descriptions[i])
     
 
     # Get Client AFM
