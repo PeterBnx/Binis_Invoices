@@ -1,16 +1,20 @@
+from backend.ProductsRegister import ProductsRegister
+from GUI.CustomDialog import CustomDialog
 from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QScrollArea, QPushButton
 
 class OrderProductsPage(QWidget):
     def __init__(self, main_window):
         super().__init__()
         self.main_window = main_window
-        
+
         # Row widgets
         self.row_widgets = []
+        self.is_registered_labels = []
 
         # Layouts
         self.gen_layout = QVBoxLayout()
         self.scroll_layout = QVBoxLayout()
+        self.main_btns_layout = QHBoxLayout()
 
         # ScrollArea
         self.scroll_area = QScrollArea()
@@ -18,6 +22,11 @@ class OrderProductsPage(QWidget):
 
         # Buttons
         self.back_btn = QPushButton('Πίσω')
+
+        # Main buttons
+        self.register_btn = QPushButton('Καταχώρηση Προϊόντων')
+        self.invoice_btn = QPushButton('Εξαγωγή Τιμολογίου')
+        self.main_btns_widget = QWidget()
 
 
     def initUI(self, products_data_fetcher):
@@ -40,8 +49,15 @@ class OrderProductsPage(QWidget):
         self.scroll_area.setWidget(self.scroll_widget)
 
         self.gen_layout.addWidget(self.scroll_area)
-        self.setLayout(self.gen_layout)
 
+        # Set main buttons
+        self.register_btn.clicked.connect(self.on_register_btn_click)
+        self.main_btns_layout.addWidget(self.register_btn)
+        self.main_btns_layout.addWidget(self.invoice_btn)
+        self.main_btns_widget.setLayout(self.main_btns_layout)
+        self.gen_layout.addWidget(self.main_btns_widget)
+
+        self.setLayout(self.gen_layout)
 
     def add_data_row(self, products_data_fetcher, index):
         quantity_label = QLabel(products_data_fetcher.prod_quantities[index])
@@ -57,6 +73,8 @@ class OrderProductsPage(QWidget):
         layout.addWidget(price_label)
         layout.addWidget(is_registered_label)
 
+        self.is_registered_labels.append(is_registered_label)
+
         row_widget = QWidget()
         row_widget.setLayout(layout)
         self.row_widgets.append(row_widget)
@@ -64,13 +82,13 @@ class OrderProductsPage(QWidget):
     def set_order_products_page(self, products_data_fetcher):
         self.initUI(products_data_fetcher)
 
+    def set_prod_is_registered_labels(self):
+        for i in range(len(self.is_registered_labels)):
+            self.is_registered_labels[i] = str(self.products_data_fetcher.prod_is_registered[i])
+
     def reset_order_products_page(self):
-        self.quantity_labels.clear()
-        self.code_labels.clear()
-        self.description_labels.clear()
-        self.price_labels.clear()
-        self.is_registered_labels.clear()
         self.row_widgets.clear()
+        self.is_registered_labels.clear()
 
         for i in reversed(range(self.scroll_layout.count())): 
             self.scroll_layout.itemAt(i).widget().setParent(None)
@@ -85,3 +103,12 @@ class OrderProductsPage(QWidget):
         self.reset_order_products_page()
         self.products_data_fetcher.reset_fetcher()
         self.main_window.go_to_orders_page()
+
+    def on_register_btn_click(self):
+        if (not False in self.products_data_fetcher.prod_is_registered):
+            dialog = CustomDialog('Όλα τα προϊόντα της παραγγελίας είναι καταχωρημένα.\nΜπορείτε να προχωρήσετε στην εξαγωγή τιμολογίου.',
+                                  type='ok', parent=self)
+            dialog.show()
+        else:
+            products_register = ProductsRegister()
+            products_register.register(self.products_data_fetcher)

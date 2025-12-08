@@ -1,9 +1,8 @@
 from backend.Shared import shared_instance
 from backend.db import DB
+from backend.Product import Product
 from bs4 import BeautifulSoup
-from backend.pathResolver import PathResolver
-import pandas as pd
-import io
+
 
 class ProductsDataFetcher:
     def __init__(self):
@@ -21,9 +20,10 @@ class ProductsDataFetcher:
         self.prod_descriptions = []
         self.prod_is_registered = []
 
+        self.products = []
+
 
     def fetch_order_products_data(self, order_number):
-        print(order_number)
         self.order_number = order_number
         self.order_url =  'https://www.emporiorologion.gr/admin/ordini3.php?ordine=' + self.order_number
         shared_instance.session.post(shared_instance.emp_login_url, data=shared_instance.emp_payload)
@@ -35,6 +35,16 @@ class ProductsDataFetcher:
         self.fetch_products_prices()
         self.fetch_products_is_registered()
         self.fetch_products_descriptions()
+
+        for i in range(len(self.prod_codes)):
+            self.products.append(Product(
+                self.prod_quantities[i],
+                self.prod_codes[i],
+                self.prod_descriptions[i],
+                self.prod_prices[i],
+                self.prod_is_registered[i]
+            ))
+
         self.fetch_shipping_tax()
         self.fetch_client_afm()
 
@@ -185,6 +195,7 @@ class ProductsDataFetcher:
 
 
     def reset_fetcher(self):
+        self.products.clear()
         self.prod_quantities.clear()
         self.prod_codes.clear()
         self.prod_descriptions.clear()
