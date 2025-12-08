@@ -1,4 +1,5 @@
 from backend.ProductsRegister import ProductsRegister
+from backend.InvoiceMaker import InvoiceMaker
 from GUI.CustomDialog import CustomDialog
 from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QScrollArea, QPushButton
 
@@ -52,6 +53,7 @@ class OrderProductsPage(QWidget):
 
         # Set main buttons
         self.register_btn.clicked.connect(self.on_register_btn_click)
+        self.invoice_btn.clicked.connect(self.on_make_invoice_btn_click)
         self.main_btns_layout.addWidget(self.register_btn)
         self.main_btns_layout.addWidget(self.invoice_btn)
         self.main_btns_widget.setLayout(self.main_btns_layout)
@@ -112,3 +114,7 @@ class OrderProductsPage(QWidget):
         else:
             products_register = ProductsRegister()
             products_register.register(self.products_data_fetcher)
+
+    def on_make_invoice_btn_click(self):
+        invoice_maker = InvoiceMaker()
+        invoice_maker.make_invoice(self.products_data_fetcher)
