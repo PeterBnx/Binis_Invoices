@@ -39,7 +39,11 @@ class Shared:
 
             'ctl00$MainContent$Button1': 'Login'
         }
-        self.all_cis_registered_codes, self.all_cis_registered_descriptions = self.get_all_registered_products()
+        self.get_all_registered_products()
+        if (len(self.all_cis_registered_codes) == 0):
+            self.cis_creds_correct = False
+        else: 
+            self.cis_creds_correct = True
 
     def get_all_registered_products(self):
         self.session.post(self.cis_login_url, data=self.cis_payload)
@@ -60,11 +64,14 @@ class Shared:
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         export_response = self.session.post(self.cis_items_url, data=payload, headers=headers)
-        df = pd.read_excel(io.BytesIO(export_response.content))
+        try:
+            df = pd.read_excel(io.BytesIO(export_response.content))
+        except ValueError:
+            self.all_cis_registered_codes = []
+            self.all_cis_registered_descriptions = []
+            return
 
-        all_cis_codes = [item.strip().strip('\\t') for item in df['Κωδικός']]
-        all_cis_descriptions = [item.strip() for item in df['Περιγραφή']]
-
-        return all_cis_codes, all_cis_descriptions
+        self.all_cis_registered_codes = [item.strip().strip('\\t') for item in df['Κωδικός']]
+        self.all_cis_registered_descriptions = [item.strip() for item in df['Περιγραφή']]
 
 shared_instance = Shared()

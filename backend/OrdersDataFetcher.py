@@ -14,6 +14,13 @@ class OrdersDataFetcher():
         date_pattern = compile(r'\b\d{2}/\d{2}/\d{4}\b')
 
         self.order_elements = self.soup.findAll('a', href=order_pattern)
+
+        if (len(self.order_elements) == 0):
+            self.creds_correct = False
+            return
+        else:
+            self.creds_correct = True
+
         self.client_elements = self.soup.findAll('a', href=client_pattern)
         self.date_elements = self.soup.findAll('td', {'valign': 'TOP', 'align': 'center'}, string=date_pattern)
 

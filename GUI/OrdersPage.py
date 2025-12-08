@@ -8,11 +8,11 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea
 class OrdersPage(QWidget):
     def __init__(self, main_window):
         super().__init__()
+        self.orders_data_fetcher = OrdersDataFetcher()
         self.main_window = main_window
         self.scroll_widget = QWidget()
         self.v_layout = QVBoxLayout()
         self.scroll_area = QScrollArea()
-        self.orders_data_fetcher = OrdersDataFetcher()
 
         self.initUI()
 

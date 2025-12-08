@@ -32,6 +32,7 @@ class ProductsDataFetcher:
 
         self.fetch_products_quantities()
         self.fetch_products_codes()
+
         self.fetch_products_prices()
         self.fetch_products_is_registered()
         self.fetch_products_descriptions()

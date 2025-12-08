@@ -9,14 +9,7 @@ from os import remove
 class InvoiceMaker:
     def make_invoice(self, products_data_fetcher):
         with sync_playwright() as p:
-            # browser = p.chromium.launch(headless=False, channel='chrome')
-
-            try:
-                browser = p.chromium.connect_over_cdp("http://localhost:9222")
-            except:
-                browser = p.chromium.launch(headless=False)
-
-                
+            browser = p.chromium.launch(headless=False, channel='chrome')                
             page = browser.new_page()
             page.goto("https://live.livecis.gr/live/")
 
