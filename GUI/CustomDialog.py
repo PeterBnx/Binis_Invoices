@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel
+from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel, QApplication
 from PyQt6.QtCore import Qt
 
 class CustomDialog(QDialog):
@@ -25,3 +25,18 @@ class CustomDialog(QDialog):
 
         self.adjustSize()
         self.setFixedSize(self.size())
+
+        self.center_dialog(parent)
+
+    def center_dialog(self, parent):
+        """Centers dialog to parent or screen."""
+        if parent:
+            parent_center = parent.frameGeometry().center()
+            geo = self.frameGeometry()
+            geo.moveCenter(parent_center)
+            self.move(geo.topLeft())
+        else:
+            screen = QApplication.primaryScreen().availableGeometry().center()
+            geo = self.frameGeometry()
+            geo.moveCenter(screen)
+            self.move(geo.topLeft())

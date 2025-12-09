@@ -1,5 +1,6 @@
 from backend.ProductsDataFetcher import ProductsDataFetcher
 from backend.Shared import shared_instance
+from GUI.CustomDialog import CustomDialog
 from GUI.OrdersPage import OrdersPage
 from GUI.OrderProductsPage import OrderProductsPage
 from GUI.ChangeCredentialsPage import ChangeCredentialsPage
@@ -18,8 +19,7 @@ class MainWindow(QMainWindow):
 
         self.products_data_fetcher = ProductsDataFetcher()
 
-        if (self.are_creds_correct != 3):
-            self.on_wrong_creds()
+
 
         self.initUI()
 
@@ -33,7 +33,11 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.stacked_widget)
 
         self.setWindowTitle('Τιμολόγια Μπινής')
-        self.go_to_orders_page()
+        
+        if (self.are_creds_correct() == 3): #testing
+            self.on_wrong_creds()
+        else:
+            self.go_to_orders_page()
 
 
     # 0: Both are incorrect
@@ -47,7 +51,28 @@ class MainWindow(QMainWindow):
         else: return 3
 
     def on_wrong_creds(self):
-        print(self.are_creds_correct())
+        dialog = CustomDialog(
+            message='Λάθος Πιστοποιητικά. Αλλάξτε τους αποθηκευμένους κωδικούς.',
+            type='ok',
+            parent=self,
+            title='Λάθος Κωδικοί'
+        )
+        dialog.button.clicked.connect(self.on_dialog_accept)
+        dialog.exec()
+
+    def on_dialog_accept(self):
+        self.change_creds_page.save_btn.clicked.connect(self.on_save_creds_click)
+        self.go_to_change_creds_page()
+
+    def on_save_creds_click(self):
+        self.change_creds_page.on_save_btn_click()
+        self.orders_page = OrdersPage(self)
+        self.products_data_fetcher = ProductsDataFetcher()
+
+        if (self.are_creds_correct() == 3): #testing
+            self.on_wrong_creds()
+        else:
+            self.go_to_orders_page()
 
     def go_to_orders_page(self):
         self.stacked_widget.setCurrentIndex(0)
