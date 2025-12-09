@@ -19,8 +19,6 @@ class MainWindow(QMainWindow):
 
         self.products_data_fetcher = ProductsDataFetcher()
 
-
-
         self.initUI()
 
     def initUI(self):
@@ -34,9 +32,10 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle('Τιμολόγια Μπινής')
         
-        if (self.are_creds_correct() == 3): #testing
+        if (self.are_creds_correct() != 3): #testing
             self.on_wrong_creds()
         else:
+            self.orders_page.initUI()
             self.go_to_orders_page()
 
 
@@ -45,11 +44,20 @@ class MainWindow(QMainWindow):
     # 2: Only Cis is correct
     # 3: Both are correct
     def are_creds_correct(self):
-        if (not shared_instance.cis_creds_correct and not self.orders_page.orders_data_fetcher.creds_correct): return 0
-        elif (shared_instance.cis_creds_correct < self.orders_page.orders_data_fetcher.creds_correct): return 1
-        elif (shared_instance.cis_creds_correct > self.orders_page.orders_data_fetcher.creds_correct): return 2
-        else: return 3
+        emp_creds_correct = shared_instance.get_all_orders()
+        cis_creds_correct = shared_instance.get_all_registered_products()
 
+        print('Emp: ' + str(emp_creds_correct))
+        print('Cis: ' + str(cis_creds_correct))
+
+        if emp_creds_correct and cis_creds_correct:
+            return 3
+        if emp_creds_correct and not cis_creds_correct:
+            return 1
+        if cis_creds_correct and not emp_creds_correct:
+            return 2
+        return 0
+    
     def on_wrong_creds(self):
         dialog = CustomDialog(
             message='Λάθος Πιστοποιητικά. Αλλάξτε τους αποθηκευμένους κωδικούς.',
@@ -66,12 +74,12 @@ class MainWindow(QMainWindow):
 
     def on_save_creds_click(self):
         self.change_creds_page.on_save_btn_click()
-        self.orders_page = OrdersPage(self)
-        self.products_data_fetcher = ProductsDataFetcher()
+        shared_instance.reset_session()
 
-        if (self.are_creds_correct() == 3): #testing
+        if (self.are_creds_correct() != 3): #testing
             self.on_wrong_creds()
         else:
+            self.orders_page.initUI()
             self.go_to_orders_page()
 
     def go_to_orders_page(self):

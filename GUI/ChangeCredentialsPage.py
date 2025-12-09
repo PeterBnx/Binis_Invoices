@@ -23,7 +23,7 @@ class ChangeCredentialsPage(QWidget):
         self.emp_username_txt =  QLineEdit(shared_instance.emp_name, self)
         self.emp_passwd_txt =  QLineEdit(shared_instance.emp_passwd, self)
         self.cis_username_txt =  QLineEdit(shared_instance.cis_name, self)
-        self.cis_passwd_txt =  QLineEdit(shared_instance.cis_password, self)
+        self.cis_passwd_txt =  QLineEdit(shared_instance.cis_passwd, self)
 
         self.save_btn = QPushButton('Αποθήκευση', self)
 

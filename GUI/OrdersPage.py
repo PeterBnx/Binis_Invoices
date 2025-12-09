@@ -1,4 +1,3 @@
-from backend.OrdersDataFetcher import OrdersDataFetcher
 from backend.ProductsDataFetcher import ProductsDataFetcher
 from backend.Shared import shared_instance
 from GUI.OrderRow import OrderRow
@@ -8,25 +7,22 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea
 class OrdersPage(QWidget):
     def __init__(self, main_window):
         super().__init__()
-        self.orders_data_fetcher = OrdersDataFetcher()
         self.main_window = main_window
         self.scroll_widget = QWidget()
         self.v_layout = QVBoxLayout()
         self.scroll_area = QScrollArea()
 
-        self.initUI()
 
     def initUI(self):
         # Set Scroll Area
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setWidget(self.scroll_widget)
 
-
         # Set Layout
-        for i in range(len(self.orders_data_fetcher.order_elements)):
-            order_number_text = self.orders_data_fetcher.order_elements[i]
-            client_text = self.orders_data_fetcher.client_elements[i]
-            date_text = self.orders_data_fetcher.date_elements[i]
+        for i in range(len(shared_instance.order_elements)):
+            order_number_text = shared_instance.order_elements[i]
+            client_text = shared_instance.client_elements[i]
+            date_text = shared_instance.date_elements[i]
             order_row = OrderRow(order_number_text, client_text, date_text, self)
 
             # connect button handlers
