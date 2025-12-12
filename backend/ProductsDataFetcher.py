@@ -114,10 +114,11 @@ class ProductsDataFetcher:
         brands_number_of_products = []
         brands_full = []
         brands_short = []
+        brands_types = []
         brands_dict = {item[1]: item[2] for item in db.get_all_brands()}
         number_of_products = sum(self.prod_quantities)
 
-        # initializing brands_full and brands_short
+        # initializing brands_full brands_short and brands_types
         for element in brands_elements:
             brand_name_full = element.get_text().strip().upper()
             brands_full.append(brand_name_full)
@@ -128,6 +129,18 @@ class ProductsDataFetcher:
                 brand_name_short = brand_name_full
             brands_short.append(brand_name_short)
 
+            # format the type
+            # if a word from types dict is found in brand full name, append the according brand type
+            for type in self.types_dict.keys():
+                is_watch = True
+                if type in brand_name_full:
+                    brands_types.append(self.types_dict[type])
+                    is_watch = False
+                    break
+                if (is_watch):
+                    brands_types.append('Ρολόι')
+                    break
+
         # getting the number of products for each brand
         brands_number_of_products = [int(code.get_text().strip()) for code in self.soup.find_all('font', attrs={'size': '2', 'face' : 'trebuchet MS'}) if '€' not in code.get_text()]
         last_brand_number_of_products = number_of_products - sum(brands_number_of_products)
@@ -136,9 +149,6 @@ class ProductsDataFetcher:
         # for i, brand_num in enumerate(brands_number_of_products):
         #     counter = 0
         #     while (counter <= brand_num):
-        #         # format the type
-        #         for type in self.types_dict.keys():
-        #             if type in 
 
         for code in self.prod_codes:
             self.prod_descriptions.append(code)
@@ -148,6 +158,7 @@ class ProductsDataFetcher:
 
         print(brands_full)
         print(brands_short)
+        print(brands_types)
 
 
     # Get Client AFM
