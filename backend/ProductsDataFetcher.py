@@ -118,7 +118,7 @@ class ProductsDataFetcher:
         brands_dict = {item[1]: item[2] for item in db.get_all_brands()}
         number_of_products = sum(self.prod_quantities)
 
-        # initializing brands_full brands_short and brands_types
+        # initializing brands_full, brands_short and brands_types
         for element in brands_elements:
             brand_name_full = element.get_text().strip().upper()
             brands_full.append(brand_name_full)
@@ -146,15 +146,37 @@ class ProductsDataFetcher:
         last_brand_number_of_products = number_of_products - sum(brands_number_of_products)
         brands_number_of_products.append(last_brand_number_of_products) # the last brand
 
-        # for i, brand_num in enumerate(brands_number_of_products):
-        #     counter = 0
-        #     while (counter <= brand_num):
+        curr_prod_index = 0
+        for i, brand_num in enumerate(brands_number_of_products):
+            counter = 0
+            while (counter < brand_num):
+                # If product is registered update the value of brand_short in DB (and temp dictionary) or insert a new
+                # one if the brand_full does not exist at all
+                if (self.prod_is_registered[curr_prod_index]):
+                    index = shared_instance.all_cis_registered_codes.index(self.prod_codes[len(self.prod_descriptions)])
+                    descr = shared_instance.all_cis_registered_descriptions[index]
 
-        for code in self.prod_codes:
-            self.prod_descriptions.append(code)
-            self.prod_brands_full.append(code)
-            self.prod_brands_short.append(code)
-            self.prod_types.append(code)
+                    brand_type = descr.split()[0] # get type of registered product
+                    brand_short = ' '.join(descr.split()[1:]) # get brand short
+                    brands_types[i] = brand_type
+                    brands_short[i] = brand_short
+
+                    brand_found_db = db.get_brand_by_brand_full(brands_full[i])
+                    if (brand_found_db and brand_found_db[2] != brand_short):
+                        db.update_brand(brands_full[i], brand_short)
+                    elif (not brand_found_db):
+                        db.insert_brand(brands_full[i], brand_short)
+
+                    brands_dict.update({brands_full[i] : brand_short})
+                        
+
+                description = brands_types[i] + ' ' + brands_short[i]
+                self.prod_descriptions.append(description)
+                self.prod_brands_full.append(brands_full[i])
+                self.prod_brands_short.append(brands_short[i])
+                self.prod_types.append(brands_types[i])
+                counter += self.prod_quantities[curr_prod_index]
+                curr_prod_index += 1
 
         print(brands_full)
         print(brands_short)

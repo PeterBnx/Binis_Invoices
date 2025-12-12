@@ -44,7 +44,7 @@ class DB:
 
         except sqlite3.Error as e:
             print("Database error:", e)
-            return None
+            return False
 
     def fetch_all(self, query, params=None):
         try:
@@ -98,4 +98,4 @@ class DB:
                 UPDATE brands SET brand_short = ? WHERE id = ?
             """
             return self.execute(query, (brand_short, brand_found[0]))
-        return None
+        return False
