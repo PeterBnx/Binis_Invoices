@@ -87,6 +87,15 @@ class DB:
         return self.fetch_all("SELECT * FROM brands ORDER BY id")
 
 
-    def get_brand_by_id(self, brand_id):
-        rows = self.fetch_all("SELECT * FROM brands WHERE id = ?", (brand_id,))
+    def get_brand_by_brand_full(self, brand_full):
+        rows = self.fetch_all("SELECT * FROM brands WHERE brand_full = ?", (brand_full,))
         return rows[0] if rows else None
+    
+    def update_brand(self, brand_full, brand_short):
+        brand_found = self.get_brand_by_brand_full(brand_full)
+        if (brand_found and brand_found[2] != brand_short):
+            query = """
+                UPDATE brands SET brand_short = ? WHERE id = ?
+            """
+            return self.execute(query, (brand_short, brand_found[0]))
+        return None

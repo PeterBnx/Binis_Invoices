@@ -17,6 +17,9 @@ class ProductsDataFetcher:
         self.prod_quantities = []
         self.prod_codes = []
         self.prod_prices = []
+        self.prod_types = []
+        self.prod_brands_full = []
+        self.prod_brands_short = []
         self.prod_descriptions = []
         self.prod_is_registered = []
 
@@ -57,7 +60,7 @@ class ProductsDataFetcher:
         quantities = self.soup.find_all('input', attrs={"name": "q_inviati[]", "id": "q_inviati[]"})
 
         for quantity in quantities:
-            self.prod_quantities.append(quantity.get('value').replace(' ', ''))
+            self.prod_quantities.append(int(quantity.get('value').replace(' ', '')))
 
 
 
@@ -105,91 +108,53 @@ class ProductsDataFetcher:
 
 
     # Formatting products descriptions
-    def fetch_products_descriptions(self): #!!! NEED IMPROVEMENT FOR CREATING DESCRIPTION IF ITEM IS REGISTERED
+    def fetch_products_descriptions(self):
         db = DB()
-        brands_quantities = []
-        brands = []
-        brands_dict = {item[1]: item[2] for item in db.get_all_brands()}
-
-        # Get brands elements texts
         brands_elements = self.soup.find_all(class_ = 'Stile11')
+        brands_number_of_products = []
+        brands_full = []
+        brands_short = []
+        brands_dict = {item[1]: item[2] for item in db.get_all_brands()}
+        number_of_products = sum(self.prod_quantities)
 
-        values = self.soup.find_all('font', attrs={'size': '2', 'face' : 'trebuchet MS'})
+        # initializing brands_full and brands_short
+        for element in brands_elements:
+            brand_name_full = element.get_text().strip().upper()
+            brands_full.append(brand_name_full)
+            # starting format of brand_short
+            if (brand_name_full in brands_dict.keys()):
+                brand_name_short = brands_dict[brand_name_full]
+            else: 
+                brand_name_short = brand_name_full
+            brands_short.append(brand_name_short)
 
-        for code in values:
-            if '€' not in code.get_text():
-                brands_quantities.append(code.get_text())
+        # getting the number of products for each brand
+        brands_number_of_products = [int(code.get_text().strip()) for code in self.soup.find_all('font', attrs={'size': '2', 'face' : 'trebuchet MS'}) if '€' not in code.get_text()]
+        last_brand_number_of_products = number_of_products - sum(brands_number_of_products)
+        brands_number_of_products.append(last_brand_number_of_products) # the last brand
 
-        for brand in brands_elements:
-            brands.append(brand.get_text())
+        # for i, brand_num in enumerate(brands_number_of_products):
+        #     counter = 0
+        #     while (counter <= brand_num):
+        #         # format the type
+        #         for type in self.types_dict.keys():
+        #             if type in 
 
-        #Formatting brands_types (what is the type of every brand in the order)
-        brands_types = []
-        for i in range(len(brands)):
-            is_watch = True
-            for type in list(self.types_dict.keys()):
-                if type in brands[i].lower():
-                    brands_types.append(self.types_dict[type])
-                    is_watch = False
-                    break
-            if is_watch:
-                brands_types.append('Ρολόι')
+        for code in self.prod_codes:
+            self.prod_descriptions.append(code)
+            self.prod_brands_full.append(code)
+            self.prod_brands_short.append(code)
+            self.prod_types.append(code)
 
-        #Formatting brands list (keeping only the name of the brand) 
-        for i in range(len(brands)):
-            for name in list(brands_dict.keys()):
-                if name in brands[i]:
-                    brands[i] = brands_dict[name]
-                    break
+        print(brands_full)
+        print(brands_short)
 
-        #Creating brand_descriptions (the general brand description for its items)
-        brand_descriptions = []
-
-        for i in range(len(brands_types)):
-            brand_descriptions.append(brands_types[i] + " " + brands[i])
-
-
-        #Assigning every item to its brand and creating the final description for every item
-        j = 0
-        for i in range(len(brands_quantities)):
-            counter = 0
-            
-            while (counter + int(self.prod_quantities[j]) <= int(brands_quantities[i])):
-                # Searching if item exists in registered products to get the description from there
-                try:
-                    index = shared_instance.all_cis_registered_codes.index(self.prod_codes[len(self.prod_descriptions)])
-                    self.prod_descriptions.append(shared_instance.all_cis_registered_descriptions[index])
-                except ValueError:
-                    self.prod_descriptions.append(brand_descriptions[i])
-                counter += int(self.prod_quantities[j])
-                j+=1
-
-                if j == len(self.prod_quantities) - 1:
-                    break
-
-        if len(brands_quantities) > 0:
-            for u in range(j, len(self.prod_codes)):
-                try:
-                    index = shared_instance.all_cis_registered_codes.index(self.prod_codes[len(self.prod_descriptions)])
-                    self.prod_descriptions.append(shared_instance.all_cis_registered_descriptions[index])
-                except ValueError:
-                    self.prod_descriptions.append(brand_descriptions[i])
-        else:
-            for u in range(j, len(self.prod_codes)):
-                try:
-                    index = shared_instance.all_cis_registered_codes.index(self.prod_codes[len(self.prod_descriptions)])
-                    self.prod_descriptions.append(shared_instance.all_cis_registered_descriptions[index])
-                except ValueError:
-                    self.prod_descriptions.append(brand_descriptions[i])
-    
 
     # Get Client AFM
     def fetch_client_afm(self):
         url_elements = self.soup.find_all('a', limit=7)
         client_url_href = url_elements[len(url_elements) - 1].get('href')
-
         client_url = 'https://www.emporiorologion.gr/admin/' + client_url_href
-
         client_page = shared_instance.session.get(client_url)
         client_soup = BeautifulSoup(client_page.content, 'html.parser') 
         self.client_afm = client_soup.find('input', attrs={'id': 'nome222'}).get('value')

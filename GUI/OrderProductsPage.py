@@ -8,6 +8,15 @@ class OrderProductsPage(QWidget):
         super().__init__()
         self.main_window = main_window
 
+        # Categories Row
+        self.cat_widget = QWidget()
+        self.cat_layout = QHBoxLayout()
+        self.cat_quant_label = QLabel('Ποσότητα')
+        self.cat_code_label = QLabel('Κωδικός')
+        self.cat_descr_label = QLabel('Περιγραφή')
+        self.cat_price_label = QLabel('Τιμή')
+        self.cat_registered_label = QLabel('Καταχωρημένο')
+
         # Row widgets
         self.row_widgets = []
         self.is_registered_labels = []
@@ -33,9 +42,18 @@ class OrderProductsPage(QWidget):
     def initUI(self, products_data_fetcher):
         self.products_data_fetcher = products_data_fetcher
 
-        # Set Back Button
+        # Back Button
         self.gen_layout.addWidget(self.back_btn)
         self.back_btn.clicked.connect(self.on_back_btn_click)
+
+        # Categories Row
+        self.cat_layout.addWidget(self.cat_quant_label)
+        self.cat_layout.addWidget(self.cat_code_label)
+        self.cat_layout.addWidget(self.cat_descr_label)
+        self.cat_layout.addWidget(self.cat_price_label)
+        self.cat_layout.addWidget(self.cat_registered_label)
+        self.cat_widget.setLayout(self.cat_layout)
+        self.gen_layout.addWidget(self.cat_widget)
 
         # ScrollArea
         for i in range(len(products_data_fetcher.prod_codes)):
@@ -62,11 +80,11 @@ class OrderProductsPage(QWidget):
         self.setLayout(self.gen_layout)
 
     def add_data_row(self, products_data_fetcher, index):
-        quantity_label = QLabel(products_data_fetcher.prod_quantities[index])
+        quantity_label = QLabel(str(products_data_fetcher.prod_quantities[index]))
         code_label = QLabel(products_data_fetcher.prod_codes[index])
         description_label = QLabel(products_data_fetcher.prod_descriptions[index])
-        price_label = QLabel(products_data_fetcher.prod_prices[index])
-        is_registered_label = QLabel(str(products_data_fetcher.prod_is_registered[index]))
+        price_label = QLabel(products_data_fetcher.prod_prices[index] + ' €')
+        is_registered_label = QLabel('Ναι' if products_data_fetcher.prod_is_registered[index] else 'Όχι')
 
         layout = QHBoxLayout()
         layout.addWidget(quantity_label)
