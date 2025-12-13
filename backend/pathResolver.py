@@ -13,3 +13,7 @@ class PathResolver:
     @staticmethod
     def get_creds_path():
         return PathResolver.get_project_path() + 'backend\\' + 'creds.txt'
+    
+    @staticmethod
+    def get_styles_path():
+        return PathResolver.get_project_path() + 'GUI\\' + 'styles\\'

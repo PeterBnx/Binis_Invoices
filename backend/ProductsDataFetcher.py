@@ -23,6 +23,13 @@ class ProductsDataFetcher:
         self.prod_descriptions = []
         self.prod_is_registered = []
 
+        self.brands_number_of_products = []
+        self.brands_full = []
+        self.brands_short = []
+        self.brands_types = []
+        self.brands_dict = None
+        self.number_of_products = 0
+
         self.products = []
 
 
@@ -110,44 +117,40 @@ class ProductsDataFetcher:
     # Formatting products descriptions
     def fetch_products_descriptions(self):
         db = DB()
+        self.brands_dict = {item[1]: item[2] for item in db.get_all_brands()}
+        self.number_of_products = sum(self.prod_quantities)
         brands_elements = self.soup.find_all(class_ = 'Stile11')
-        brands_number_of_products = []
-        brands_full = []
-        brands_short = []
-        brands_types = []
-        brands_dict = {item[1]: item[2] for item in db.get_all_brands()}
-        number_of_products = sum(self.prod_quantities)
 
         # initializing brands_full, brands_short and brands_types
         for element in brands_elements:
             brand_name_full = element.get_text().strip().upper()
-            brands_full.append(brand_name_full)
+            self.brands_full.append(brand_name_full)
             # starting format of brand_short
-            if (brand_name_full in brands_dict.keys()):
-                brand_name_short = brands_dict[brand_name_full]
+            if (brand_name_full in self.brands_dict.keys()):
+                brand_name_short = self.brands_dict[brand_name_full]
             else: 
                 brand_name_short = brand_name_full
-            brands_short.append(brand_name_short)
+            self.brands_short.append(brand_name_short)
 
             # format the type
             # if a word from types dict is found in brand full name, append the according brand type
             for type in self.types_dict.keys():
                 is_watch = True
                 if type in brand_name_full:
-                    brands_types.append(self.types_dict[type])
+                    self.brands_types.append(self.types_dict[type])
                     is_watch = False
                     break
                 if (is_watch):
-                    brands_types.append('Ρολόι')
+                    self.brands_types.append('Ρολόι')
                     break
 
         # getting the number of products for each brand
-        brands_number_of_products = [int(code.get_text().strip()) for code in self.soup.find_all('font', attrs={'size': '2', 'face' : 'trebuchet MS'}) if '€' not in code.get_text()]
-        last_brand_number_of_products = number_of_products - sum(brands_number_of_products)
-        brands_number_of_products.append(last_brand_number_of_products) # the last brand
+        self.brands_number_of_products = [int(code.get_text().strip()) for code in self.soup.find_all('font', attrs={'size': '2', 'face' : 'trebuchet MS'}) if '€' not in code.get_text()]
+        last_brand_number_of_products = self.number_of_products - sum(self.brands_number_of_products)
+        self.brands_number_of_products.append(last_brand_number_of_products) # the last brand
 
         curr_prod_index = 0
-        for i, brand_num in enumerate(brands_number_of_products):
+        for i, brand_num in enumerate(self.brands_number_of_products):
             counter = 0
             while (counter < brand_num):
                 # If product is registered update the value of brand_short in DB (and temp dictionary) or insert a new
@@ -158,29 +161,29 @@ class ProductsDataFetcher:
 
                     brand_type = descr.split()[0] # get type of registered product
                     brand_short = ' '.join(descr.split()[1:]) # get brand short
-                    brands_types[i] = brand_type
-                    brands_short[i] = brand_short
+                    self.brands_types[i] = brand_type
+                    self.brands_short[i] = brand_short
 
-                    brand_found_db = db.get_brand_by_brand_full(brands_full[i])
+                    brand_found_db = db.get_brand_by_brand_full(self.brands_full[i])
                     if (brand_found_db and brand_found_db[2] != brand_short):
-                        db.update_brand(brands_full[i], brand_short)
+                        db.update_brand(self.brands_full[i], brand_short)
                     elif (not brand_found_db):
-                        db.insert_brand(brands_full[i], brand_short)
+                        db.insert_brand(self.brands_full[i], brand_short)
 
-                    brands_dict.update({brands_full[i] : brand_short})
+                    self.brands_dict.update({self.brands_full[i] : brand_short})
                         
 
-                description = brands_types[i] + ' ' + brands_short[i]
+                description = self.brands_types[i] + ' ' + self.brands_short[i]
                 self.prod_descriptions.append(description)
-                self.prod_brands_full.append(brands_full[i])
-                self.prod_brands_short.append(brands_short[i])
-                self.prod_types.append(brands_types[i])
+                self.prod_brands_full.append(self.brands_full[i])
+                self.prod_brands_short.append(self.brands_short[i])
+                self.prod_types.append(self.brands_types[i])
                 counter += self.prod_quantities[curr_prod_index]
                 curr_prod_index += 1
 
-        print(brands_full)
-        print(brands_short)
-        print(brands_types)
+        print(self.brands_full)
+        print(self.brands_short)
+        print(self.brands_types)
 
 
     # Get Client AFM

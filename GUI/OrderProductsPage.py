@@ -2,6 +2,7 @@ from backend.ProductsRegister import ProductsRegister
 from backend.InvoiceMaker import InvoiceMaker
 from GUI.CustomDialog import CustomDialog
 from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QScrollArea, QPushButton
+from PyQt6.QtCore import Qt
 
 class OrderProductsPage(QWidget):
     def __init__(self, main_window):
@@ -39,6 +40,7 @@ class OrderProductsPage(QWidget):
         self.main_btns_widget = QWidget()
 
 
+    # Initialize UI
     def initUI(self, products_data_fetcher):
         self.products_data_fetcher = products_data_fetcher
 
@@ -56,11 +58,22 @@ class OrderProductsPage(QWidget):
         self.gen_layout.addWidget(self.cat_widget)
 
         # ScrollArea
-        for i in range(len(products_data_fetcher.prod_codes)):
-            self.add_data_row(products_data_fetcher, i)
-
-        for row_widget in self.row_widgets:
-            self.scroll_layout.addWidget(row_widget)
+        curr_prod_counter = 0
+        brand_counter = 0
+        i = 0
+        while(i < (len(products_data_fetcher.prod_codes))):
+            if (curr_prod_counter == 0):
+                full_brand_label = QLabel(products_data_fetcher.brands_full[brand_counter])
+                full_brand_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.scroll_layout.addWidget(full_brand_label)
+            if (curr_prod_counter <= products_data_fetcher.brands_number_of_products[brand_counter]):
+                self.add_data_row(products_data_fetcher, i)
+                curr_prod_counter += products_data_fetcher.prod_quantities[i]
+                i += 1
+            else:
+                brand_counter += 1
+                curr_prod_counter = 0
+            
 
         self.scroll_widget.setLayout(self.scroll_layout)
         
@@ -97,7 +110,7 @@ class OrderProductsPage(QWidget):
 
         row_widget = QWidget()
         row_widget.setLayout(layout)
-        self.row_widgets.append(row_widget)
+        self.scroll_layout.addWidget(row_widget)
     
     def set_order_products_page(self, products_data_fetcher):
         self.initUI(products_data_fetcher)
