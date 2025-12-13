@@ -1,4 +1,5 @@
 from backend.ProductsRegister import ProductsRegister
+from backend.db import DB
 from backend.InvoiceMaker import InvoiceMaker
 from GUI.CustomDialog import CustomDialog
 from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QScrollArea, QPushButton, QComboBox, QLineEdit
@@ -148,6 +149,7 @@ class OrderProductsPage(QWidget):
         self.main_window.go_to_orders_page()
 
     def on_register_btn_click(self):
+        db = DB()
         if not False in self.products_data_fetcher.prod_is_registered:
             dialog = CustomDialog(
                 'Όλα τα προϊόντα της παραγγελίας είναι καταχωρημένα.\n'
@@ -157,9 +159,14 @@ class OrderProductsPage(QWidget):
             )
             dialog.show()
         else:
+            for i, brand_full in enumerate(self.products_data_fetcher.brands_full):
+                db.update_brand(brand_full, self.products_data_fetcher.brands_short[i])
             ProductsRegister().register(self.products_data_fetcher)
 
     def on_make_invoice_btn_click(self):
+        db = DB()
+        for i, brand_full in enumerate(self.products_data_fetcher.brands_full):
+            db.update_brand(brand_full, self.products_data_fetcher.brands_short[i])
         InvoiceMaker().make_invoice(
             self.products_data_fetcher,
             self.invoice_type_combo.currentData()
@@ -176,6 +183,7 @@ class OrderProductsPage(QWidget):
         prod_fetcher = self.products_data_fetcher
         while (curr_prod_counter < prod_fetcher.brands_number_of_products[brand_num]):
             self.prod_brand_labels[prod_num].setText(new_text)
+            prod_fetcher.brands_short[brand_num] = new_text
             prod_fetcher.prod_brands_short[prod_num] = new_text
             prod_fetcher.prod_descriptions[prod_num] = prod_fetcher.prod_types[prod_num] + ' ' + new_text
             curr_prod_counter += 1
