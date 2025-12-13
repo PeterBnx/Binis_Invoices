@@ -1,7 +1,7 @@
 from backend.ProductsRegister import ProductsRegister
 from backend.InvoiceMaker import InvoiceMaker
 from GUI.CustomDialog import CustomDialog
-from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QScrollArea, QPushButton, QComboBox
+from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QScrollArea, QPushButton, QComboBox, QLineEdit
 from PyQt6.QtCore import Qt
 
 
@@ -12,15 +12,16 @@ class OrderProductsPage(QWidget):
         self.products_data_fetcher = None
         self.ui_built = False
 
+        # Top layout
         self.top_layout = QHBoxLayout()
         self.back_btn = QPushButton('Πίσω')
-        self.invoice_type_combo = QComboBox()
 
+        # Combobox
+        self.invoice_type_combo = QComboBox()
         self.invoice_type_combo.addItem('ΤΔΑ', 'τδα')
         self.invoice_type_combo.addItem('INVE', 'inve')
 
         self.back_btn.clicked.connect(self.on_back_btn_click)
-
         self.top_layout.addWidget(self.back_btn)
         self.top_layout.addStretch()
         self.top_layout.addWidget(QLabel('Τύπος Τιμολογίου:'))
@@ -36,6 +37,8 @@ class OrderProductsPage(QWidget):
         self.cat_widget = QWidget()
         self.cat_widget.setLayout(self.cat_layout)
 
+
+        # Scroll Area
         self.scroll_layout = QVBoxLayout()
         self.scroll_widget = QWidget()
         self.scroll_widget.setLayout(self.scroll_layout)
@@ -93,7 +96,25 @@ class OrderProductsPage(QWidget):
 
         layout.addWidget(QLabel(str(f.prod_quantities[index])))
         layout.addWidget(QLabel(f.prod_codes[index]))
-        layout.addWidget(QLabel(f.prod_descriptions[index]))
+
+        # Prod Type
+        prod_type_combo = QComboBox()
+        prod_type_combo.addItem('Ρολόι', 'watch')
+        prod_type_combo.addItem('Κόσμημα', 'jewlery')
+        prod_type_combo.addItem('Γυαλιά', 'glasses')
+        prod_type_combo.addItem('Άλλο', 'other')
+
+        type_dict = {
+            'Ρολόι' : 0,
+            'Κόσμημα' : 1,
+            'Γυαλιά' : 2,
+            'Άλλο' : 3
+        }
+        prod_type_combo.setCurrentIndex(type_dict[f.prod_types[index]])
+        layout.addWidget(prod_type_combo)
+
+        # Prod brand
+        layout.addWidget(QLabel(f.prod_brands_short[index]))
         layout.addWidget(QLabel(f.prod_prices[index] + ' €'))
         layout.addWidget(QLabel('Ναι' if f.prod_is_registered[index] else 'Όχι'))
 
