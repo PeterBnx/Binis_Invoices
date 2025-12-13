@@ -16,7 +16,7 @@ class OrderProductsPage(QWidget):
         self.top_layout = QHBoxLayout()
         self.back_btn = QPushButton('Πίσω')
 
-        # Combobox
+        # Invoice type Combobox
         self.invoice_type_combo = QComboBox()
         self.invoice_type_combo.addItem('ΤΔΑ', 'τδα')
         self.invoice_type_combo.addItem('INVE', 'inve')
@@ -39,6 +39,7 @@ class OrderProductsPage(QWidget):
 
 
         # Scroll Area
+        self.prod_brand_labels = []
         self.scroll_layout = QVBoxLayout()
         self.scroll_widget = QWidget()
         self.scroll_widget.setLayout(self.scroll_layout)
@@ -79,9 +80,10 @@ class OrderProductsPage(QWidget):
 
         while i < len(f.prod_codes):
             if curr_prod_counter == 0:
-                brand_label = QLabel(f.brands_full[brand_counter])
-                brand_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                self.scroll_layout.addWidget(brand_label)
+                brand_edit = QLineEdit(f.brands_full[brand_counter])
+                brand_edit.textChanged.connect(lambda text, p=i, b=brand_counter: self.on_brand_edit_change(text, p, b))
+                brand_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.scroll_layout.addWidget(brand_edit)
 
             if curr_prod_counter < f.brands_number_of_products[brand_counter]:
                 self.add_data_row(f, i)
@@ -103,6 +105,7 @@ class OrderProductsPage(QWidget):
         prod_type_combo.addItem('Κόσμημα', 'jewlery')
         prod_type_combo.addItem('Γυαλιά', 'glasses')
         prod_type_combo.addItem('Άλλο', 'other')
+        prod_type_combo.currentTextChanged.connect(lambda text: self.on_prod_type_combo_change(text, index))
 
         type_dict = {
             'Ρολόι' : 0,
@@ -114,7 +117,10 @@ class OrderProductsPage(QWidget):
         layout.addWidget(prod_type_combo)
 
         # Prod brand
-        layout.addWidget(QLabel(f.prod_brands_short[index]))
+        brand_label = QLabel(f.prod_brands_short[index])
+        layout.addWidget(brand_label)
+        self.prod_brand_labels.append(brand_label)
+
         layout.addWidget(QLabel(f.prod_prices[index] + ' €'))
         layout.addWidget(QLabel('Ναι' if f.prod_is_registered[index] else 'Όχι'))
 
@@ -158,3 +164,19 @@ class OrderProductsPage(QWidget):
             self.products_data_fetcher,
             self.invoice_type_combo.currentData()
         )
+
+    def on_prod_type_combo_change(self, new_text, prod_num):
+        prod_fetcher = self.products_data_fetcher
+        prod_fetcher.prod_types[prod_num] = new_text
+        prod_fetcher.prod_descriptions[prod_num] = new_text + ' ' + prod_fetcher.prod_brands_short[prod_num]
+        print(prod_fetcher.prod_descriptions[prod_num])
+
+    def on_brand_edit_change(self, new_text, prod_num, brand_num):
+        curr_prod_counter = 0
+        prod_fetcher = self.products_data_fetcher
+        while (curr_prod_counter < prod_fetcher.brands_number_of_products[brand_num]):
+            self.prod_brand_labels[prod_num].setText(new_text)
+            prod_fetcher.prod_brands_short[prod_num] = new_text
+            prod_fetcher.prod_descriptions[prod_num] = prod_fetcher.prod_types[prod_num] + ' ' + new_text
+            curr_prod_counter += 1
+            prod_num += 1

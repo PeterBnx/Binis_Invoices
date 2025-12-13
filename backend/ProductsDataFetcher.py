@@ -65,7 +65,6 @@ class ProductsDataFetcher:
     # Get Products' Quantities
     def fetch_products_quantities(self):
         quantities = self.soup.find_all('input', attrs={"name": "q_inviati[]", "id": "q_inviati[]"})
-
         for quantity in quantities:
             self.prod_quantities.append(int(quantity.get('value').replace(' ', '')))
 
@@ -83,7 +82,6 @@ class ProductsDataFetcher:
     # Get Products' Prices
     def fetch_products_prices(self):
         prices = self.soup.find_all('td', align="RIGHT", limit=len(self.prod_codes)*3)
-
         for i in range(2, (len(prices)), 3):
             self.prod_prices.append(prices[i].get_text().replace('€ ', ''))
 
