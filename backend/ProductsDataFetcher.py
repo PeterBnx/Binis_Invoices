@@ -2,7 +2,7 @@ from backend.Shared import shared_instance
 from backend.db import DB
 from backend.Product import Product
 from bs4 import BeautifulSoup
-
+from lxml import etree
 
 class ProductsDataFetcher:
     def __init__(self):
@@ -113,6 +113,33 @@ class ProductsDataFetcher:
 
         self.shipping_tax = round((spedizione + p_dropshipping + handling + assicurazione + maggiorazione), 2)
 
+    # getting the number of products for each brand
+    # it compares the xpaths of each brand full name and prod code to find which product is assigned to each path
+    def fetch_brands_number_of_products(self):
+        brands_indexes = []
+        prod_code_indexes = []
+        root = etree.HTML(str(self.soup))
+        tree = etree.ElementTree(root)
+
+        brands_matches = root.xpath("//*[contains(concat(' ', normalize-space(@class), ' '), ' Stile11 ')]")
+        codes_matches = root.xpath("//*[contains(concat(' ', normalize-space(@class), ' '), ' Stile3 ')]")
+
+        for match in brands_matches:
+            brands_indexes.append(self.xpath_to_tr_index(tree.getpath(match)))
+        
+        for match in codes_matches:
+            prod_code_indexes.append(self.xpath_to_tr_index(tree.getpath(match)))
+
+        for brand in reversed(brands_indexes):
+            curr_prods_num = 0
+            for prod in reversed(prod_code_indexes):
+                if (prod > brand):
+                    curr_prods_num += 1
+                    prod_code_indexes.pop()
+                else:
+                    break
+            self.brands_number_of_products.append(curr_prods_num)
+        self.brands_number_of_products = [num for num in reversed(self.brands_number_of_products)]
 
     # Formatting products descriptions
     def fetch_products_descriptions(self):
@@ -120,6 +147,8 @@ class ProductsDataFetcher:
         self.brands_dict = {item[1]: item[2] for item in db.get_all_brands()}
         self.number_of_products = sum(self.prod_quantities)
         brands_elements = self.soup.find_all(class_ = 'Stile11')
+
+        self.fetch_brands_number_of_products()
 
         # initializing brands_full, brands_short and brands_types
         for element in brands_elements:
@@ -144,11 +173,6 @@ class ProductsDataFetcher:
                     self.brands_types.append('Ρολόι')
                     break
 
-        # getting the number of products for each brand
-        self.brands_number_of_products = [int(code.get_text().strip()) for code in self.soup.find_all('font', attrs={'size': '2', 'face' : 'trebuchet MS'}) if '€' not in code.get_text()]
-        last_brand_number_of_products = self.number_of_products - sum(self.brands_number_of_products)
-        self.brands_number_of_products.append(last_brand_number_of_products) # the last brand
-
         curr_prod_index = 0
         for i, brand_num in enumerate(self.brands_number_of_products):
             counter = 0
@@ -170,20 +194,15 @@ class ProductsDataFetcher:
                     elif (not brand_found_db):
                         db.insert_brand(self.brands_full[i], brand_short)
 
-                    self.brands_dict.update({self.brands_full[i] : brand_short})
-                        
+                    self.brands_dict.update({self.brands_full[i] : brand_short})                        
 
                 description = self.brands_types[i] + ' ' + self.brands_short[i]
                 self.prod_descriptions.append(description)
                 self.prod_brands_full.append(self.brands_full[i])
                 self.prod_brands_short.append(self.brands_short[i])
                 self.prod_types.append(self.brands_types[i])
-                counter += self.prod_quantities[curr_prod_index]
+                counter += 1
                 curr_prod_index += 1
-
-        print(self.brands_full)
-        print(self.brands_short)
-        print(self.brands_types)
 
 
     # Get Client AFM
@@ -234,3 +253,16 @@ class ProductsDataFetcher:
         for i in range(len(self.prod_codes)):
             if(self.prod_quantities[i] != '0'):
                 print('%-5s'%self.prod_quantities[i], '%-20s'%self.prod_codes[i], '%-20s'%self.prod_descriptions[i], '%10s'%self.prod_prices[i], '%5s'%self.prod_is_registered[i])
+
+
+    
+    # UTILS
+
+    # e.g. xpath = /html/body/form/center/table[2]/tr[1]/th/span then returns 1 (tr[1])
+    def xpath_to_tr_index(self, xpath: str):
+        for word in xpath.split('/'):
+            if 'tr[' in word:
+                word = word.replace('tr[', '')
+                word = word.replace(']', '')
+                index = int(word)
+                return index

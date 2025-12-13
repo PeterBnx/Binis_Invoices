@@ -47,9 +47,6 @@ class MainWindow(QMainWindow):
         emp_creds_correct = shared_instance.get_all_orders()
         cis_creds_correct = shared_instance.get_all_registered_products()
 
-        print('Emp: ' + str(emp_creds_correct))
-        print('Cis: ' + str(cis_creds_correct))
-
         if emp_creds_correct and cis_creds_correct:
             return 3
         if emp_creds_correct and not cis_creds_correct:

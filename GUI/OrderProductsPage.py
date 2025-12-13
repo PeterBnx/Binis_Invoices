@@ -80,9 +80,9 @@ class OrderProductsPage(QWidget):
                 brand_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 self.scroll_layout.addWidget(brand_label)
 
-            if curr_prod_counter <= f.brands_number_of_products[brand_counter]:
+            if curr_prod_counter < f.brands_number_of_products[brand_counter]:
                 self.add_data_row(f, i)
-                curr_prod_counter += f.prod_quantities[i]
+                curr_prod_counter += 1
                 i += 1
             else:
                 brand_counter += 1
