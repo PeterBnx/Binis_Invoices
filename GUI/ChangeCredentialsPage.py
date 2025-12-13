@@ -65,4 +65,4 @@ class ChangeCredentialsPage(QWidget):
         shared_instance.emp_name = emp_username
         shared_instance.emp_passwd = emp_passwd
         shared_instance.cis_name = cis_username
-        shared_instance.cis_password = cis_passwd
+        shared_instance.cis_passwd = cis_passwd

@@ -14,7 +14,7 @@ class InvoiceMaker:
             page.goto("https://live.livecis.gr/live/")
 
             page.fill('input#MainContent_txtunm', shared_instance.cis_name)
-            page.fill('input#MainContent_txtPwd', shared_instance.cis_password)
+            page.fill('input#MainContent_txtPwd', shared_instance.cis_passwd)
             page.click('input[id=MainContent_Button1]')
 
             page.goto('https://live.livecis.gr/live/Document.aspx?action=N&Personaa=&tp=%d0%d9%cb%c7%d3%c5%c9%d3')

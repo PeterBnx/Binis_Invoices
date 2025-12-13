@@ -10,7 +10,7 @@ class ProductsRegister:
             page.goto("https://live.livecis.gr/live/")
 
             page.fill('input#MainContent_txtunm', shared_instance.cis_name)
-            page.fill('input#MainContent_txtPwd', shared_instance.cis_password)
+            page.fill('input#MainContent_txtPwd', shared_instance.cis_passwd)
             page.click('input[id=MainContent_Button1]')
 
             page.goto('https://live.livecis.gr/live/Materials.aspx?tp=%C5%DF%E4%EF%F2')
