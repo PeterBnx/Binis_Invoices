@@ -5,11 +5,11 @@ from time import sleep, time
 from os.path import exists
 from os import remove
 
-
 invoice_type_dict = {
     'tda' : 'ΤΔΑ',
     'inve' : 'INVE'
 }
+
 class InvoiceMaker:
     def make_invoice(self, products_data_fetcher, invoice_type):
         with sync_playwright() as p:

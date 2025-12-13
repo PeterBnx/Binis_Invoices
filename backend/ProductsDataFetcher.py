@@ -156,7 +156,7 @@ class ProductsDataFetcher:
                 # If product is registered update the value of brand_short in DB (and temp dictionary) or insert a new
                 # one if the brand_full does not exist at all
                 if (self.prod_is_registered[curr_prod_index]):
-                    index = shared_instance.all_cis_registered_codes.index(self.prod_codes[len(self.prod_descriptions)])
+                    index = shared_instance.all_cis_registered_codes.index(self.prod_codes[curr_prod_index])
                     descr = shared_instance.all_cis_registered_descriptions[index]
 
                     brand_type = descr.split()[0] # get type of registered product
@@ -197,12 +197,34 @@ class ProductsDataFetcher:
 
 
     def reset_fetcher(self):
+        # order / client
+        self.order_number = None
+        self.order_url = None
+        self.client_afm = None
+        self.shipping_tax = 0
+
+        # products
         self.products.clear()
         self.prod_quantities.clear()
         self.prod_codes.clear()
-        self.prod_descriptions.clear()
         self.prod_prices.clear()
+        self.prod_types.clear()
+        self.prod_brands_full.clear()
+        self.prod_brands_short.clear()
+        self.prod_descriptions.clear()
         self.prod_is_registered.clear()
+
+        # brands
+        self.brands_number_of_products.clear()
+        self.brands_full.clear()
+        self.brands_short.clear()
+        self.brands_types.clear()
+        self.brands_dict = None
+        self.number_of_products = 0
+
+        # soup
+        self.soup = None
+
 
         #printing
     def print_products_data(self):
