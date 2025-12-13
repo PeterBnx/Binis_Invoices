@@ -19,7 +19,7 @@ class OrderProductsPage(QWidget):
 
         # Invoice type Combobox
         self.invoice_type_combo = QComboBox()
-        self.invoice_type_combo.addItem('ΤΔΑ', 'τδα')
+        self.invoice_type_combo.addItem('ΤΔΑ', 'tda')
         self.invoice_type_combo.addItem('INVE', 'inve')
 
         self.back_btn.clicked.connect(self.on_back_btn_click)

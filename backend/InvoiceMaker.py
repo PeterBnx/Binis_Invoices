@@ -34,8 +34,6 @@ class InvoiceMaker:
 
             page.reload()
 
-            sleep(10)
-
             index = 0
             while index < len(products_data_fetcher.prod_codes):
 
