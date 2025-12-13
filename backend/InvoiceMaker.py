@@ -6,8 +6,12 @@ from os.path import exists
 from os import remove
 
 
+invoice_type_dict = {
+    'tda' : 'ΤΔΑ',
+    'inve' : 'INVE'
+}
 class InvoiceMaker:
-    def make_invoice(self, products_data_fetcher):
+    def make_invoice(self, products_data_fetcher, invoice_type):
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=False, channel='chrome')                
             page = browser.new_page()
@@ -20,7 +24,9 @@ class InvoiceMaker:
             page.goto('https://live.livecis.gr/live/Document.aspx?action=N&Personaa=&tp=%d0%d9%cb%c7%d3%c5%c9%d3')
 
             #Select invoice type
-            page.locator('#MainContent_TabContainer1_TabPanel1_DocType').select_option('ΤΔΑ')
+            page.locator('#MainContent_TabContainer1_TabPanel1_DocType').select_option(invoice_type_dict[invoice_type])
+            if (invoice_type == 'inve'):
+                page.locator('#MainContent_TabContainer1_TabPanel1_MDVatExe').select_option('14')
 
             #Select client
             page.locator('#MainContent_TabContainer1_TabPanel1_Button6').click()
@@ -28,13 +34,15 @@ class InvoiceMaker:
 
             page.reload()
 
+            sleep(10)
+
             index = 0
             while index < len(products_data_fetcher.prod_codes):
 
                 if index % 35 == 0:
                     page.reload()
 
-                while(products_data_fetcher.prod_quantities[index] == '0'):
+                while(products_data_fetcher.prod_quantities[index] == 0):
                     index += 1
 
                 page.locator('#MainContent_Button2').click()
@@ -86,7 +94,7 @@ class InvoiceMaker:
 
 
                 #temaxia
-                page.locator('#igtxtMainContent_Lquant').fill(products_data_fetcher.prod_quantities[index])
+                page.locator('#igtxtMainContent_Lquant').fill(str(products_data_fetcher.prod_quantities[index]))
 
                 #plus
                 page.locator('#MainContent_ImageButton1').click()

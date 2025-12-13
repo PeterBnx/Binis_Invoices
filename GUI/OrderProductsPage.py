@@ -148,4 +148,4 @@ class OrderProductsPage(QWidget):
 
     def on_make_invoice_btn_click(self):
         invoice_maker = InvoiceMaker()
-        invoice_maker.make_invoice(self.products_data_fetcher)
+        invoice_maker.make_invoice(self.products_data_fetcher, 'inve')
