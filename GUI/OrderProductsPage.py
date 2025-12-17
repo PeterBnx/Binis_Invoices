@@ -2,6 +2,7 @@ from backend.ProductsRegister import ProductsRegister
 from backend.db import DB
 from backend.InvoiceMaker import InvoiceMaker
 from GUI.CustomDialog import CustomDialog
+from GUI.AddProdTypeBox import AddProdTypeBox
 from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QScrollArea, QPushButton, QComboBox, QLineEdit
 from PyQt6.QtCore import Qt
 
@@ -34,6 +35,14 @@ class OrderProductsPage(QWidget):
         self.cat_layout.addWidget(QLabel('Περιγραφή'))
         self.cat_layout.addWidget(QLabel('Τιμή'))
         self.cat_layout.addWidget(QLabel('Καταχωρημένο'))
+
+        self.prod_type_combos = []
+        self.types_arr = [
+            'Ρολόι',
+            'Κόσμημα',
+            'Γυαλιά',
+            'Άλλο'
+        ]
 
         self.cat_widget = QWidget()
         self.cat_widget.setLayout(self.cat_layout)
@@ -106,16 +115,13 @@ class OrderProductsPage(QWidget):
         prod_type_combo.addItem('Κόσμημα', 'jewlery')
         prod_type_combo.addItem('Γυαλιά', 'glasses')
         prod_type_combo.addItem('Άλλο', 'other')
-        prod_type_combo.currentTextChanged.connect(lambda text: self.on_prod_type_combo_change(text, index))
+        combo_index = len(self.prod_type_combos)
+        prod_type_combo.currentTextChanged.connect(lambda text: self.on_prod_type_combo_change(text, index, combo_index))
+        
 
-        type_dict = {
-            'Ρολόι' : 0,
-            'Κόσμημα' : 1,
-            'Γυαλιά' : 2,
-            'Άλλο' : 3
-        }
-        prod_type_combo.setCurrentIndex(type_dict[f.prod_types[index]])
+        prod_type_combo.setCurrentIndex(self.types_arr.index(f.prod_types[index]))
         layout.addWidget(prod_type_combo)
+        self.prod_type_combos.append(prod_type_combo)
 
         # Prod brand
         brand_label = QLabel(f.prod_brands_short[index])
@@ -172,11 +178,28 @@ class OrderProductsPage(QWidget):
             self.invoice_type_combo.currentData()
         )
 
-    def on_prod_type_combo_change(self, new_text, prod_num):
+    def on_prod_type_combo_change(self, new_text, prod_num, combo_index):
         prod_fetcher = self.products_data_fetcher
+        if (new_text == 'Άλλο'):
+            self.add_prod_type_box = AddProdTypeBox()
+            self.add_prod_type_box.show()
+            if self.add_prod_type_box.exec():
+                new_value = self.add_prod_type_box.line_edit.text()
+                if (new_value.strip() in self.types_arr):
+                    dialog = CustomDialog(
+                        'Ο συγκεκριμένος τύπος προϊόντος υπάρχει ήδη.',
+                        type='ok',
+                        parent=self
+                        )
+                    dialog.show()
+                else:
+                    new_text = new_value
+                    for combo in self.prod_type_combos:
+                        combo.addItem(new_value, new_value)
+                    self.prod_type_combos[combo_index].setCurrentIndex(len(self.prod_type_combos[0]) - 1)
+                        
         prod_fetcher.prod_types[prod_num] = new_text
         prod_fetcher.prod_descriptions[prod_num] = new_text + ' ' + prod_fetcher.prod_brands_short[prod_num]
-        print(prod_fetcher.prod_descriptions[prod_num])
 
     def on_brand_edit_change(self, new_text, prod_num, brand_num):
         curr_prod_counter = 0
