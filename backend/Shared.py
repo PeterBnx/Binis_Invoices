@@ -4,7 +4,6 @@ from re import compile
 import pandas as pd
 import io
 from backend.pathResolver import PathResolver
-from GUI.ChangeCredentialsPage import ChangeCredentialsPage
 
 
 class Shared:
@@ -21,13 +20,9 @@ class Shared:
         self.all_cis_registered_descriptions = []
 
     def load_credentials(self):
-        try:
-            with open(PathResolver.get_creds_path(), 'r') as file:
-                creds = [line.strip() for line in file.readlines()]
-        except FileNotFoundError:
-            with open(PathResolver.get_creds_path(), 'w') as file:
-                self.change_creds_page = ChangeCredentialsPage()
-                self.change_creds_page.show()
+        with open(PathResolver.get_creds_path(), 'r') as file:
+            creds = [line.strip() for line in file.readlines()]
+
 
         self.emp_name = creds[0]
         self.emp_passwd = creds[1]
