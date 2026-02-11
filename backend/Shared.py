@@ -4,7 +4,7 @@ from re import compile
 import pandas as pd
 import io
 from backend.pathResolver import PathResolver
-
+import os
 
 class Shared:
 
@@ -20,14 +20,21 @@ class Shared:
         self.all_cis_registered_descriptions = []
 
     def load_credentials(self):
-        with open(PathResolver.get_creds_path(), 'r') as file:
-            creds = [line.strip() for line in file.readlines()]
+        creds_path = PathResolver.get_creds_path()
+        os.makedirs(os.path.dirname(creds_path), exist_ok=True)
 
+        try:
+            with open(creds_path, 'r', encoding='utf-8') as file:
+                creds = [line.strip() for line in file.readlines()]
+        except FileNotFoundError:
+            creds = ["", "", "", ""]
+            with open(creds_path, 'w', encoding='utf-8') as file:
+                file.write("\n".join(creds))
 
-        self.emp_name = creds[0]
-        self.emp_passwd = creds[1]
-        self.cis_name = creds[2]
-        self.cis_passwd = creds[3]
+        self.emp_name = creds[0] if len(creds) > 0 else ""
+        self.emp_passwd = creds[1] if len(creds) > 1 else ""
+        self.cis_name = creds[2] if len(creds) > 2 else ""
+        self.cis_passwd = creds[3] if len(creds) > 3 else ""
 
     def reset_session(self):
         try:
