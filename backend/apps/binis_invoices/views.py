@@ -1,9 +1,13 @@
 from django.http import JsonResponse
+from .DataFetcher import DataFetcher
 
 def get_orders(request):
-    # Example data structure matching your Order interface
-    data = [
-        {"id": "1", "client": "Alice", "date": "2026-04-07", "status": "Pending"},
-        {"id": "2", "client": "Bob", "date": "2026-04-08", "status": "Completed"},
-    ]
+    data_fetcher = DataFetcher()
+    data_fetcher.fetch_all_orders()
+    data = []
+
+    for order in data_fetcher.emp_orders:
+        data.append({
+            "id": order.id, "client": order.client, "date": order.date, "status": order.status
+        })
     return JsonResponse(data, safe=False)
