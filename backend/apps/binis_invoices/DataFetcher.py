@@ -17,10 +17,7 @@ class DataFetcher:
         self.session = Session()
         self.all_cis_registered_products = []
         self.emp_orders = []
-        self.emp_name = 'Binis'
-        self.emp_passwd = 'BinisEgnatia53'
-        self.cis_name = 'MPINIST'
-        self.cis_passwd = '999559545'
+    
 
     def reset_session(self):
         try:
