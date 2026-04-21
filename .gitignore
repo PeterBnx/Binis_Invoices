@@ -30,6 +30,7 @@ coverage.xml
 
 # Environment files
 .env.*
+temp.txt
 
 # Editor directories and files
 .vscode/*

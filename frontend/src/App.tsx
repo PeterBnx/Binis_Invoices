@@ -9,10 +9,9 @@ return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          {/* These will render inside the <Outlet /> of Layout */}
           <Route path="orders" element={<Orders />} />
           <Route path="products_of_order" element={<ProductsOfOrder />} />
-          <Route index element={<ProductsOfOrder />} />
+          <Route index element={<Orders />} />
         </Route>
       </Routes>
     </BrowserRouter>

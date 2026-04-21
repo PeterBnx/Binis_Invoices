@@ -33,13 +33,13 @@ function Layout() {
       </nav>
 
       {/* --- DYNAMIC CONTENT --- */}
-      <main className="pt-32 px-8 max-w-[1600px] mx-auto pb-24">
+      <main className="pt-12 px-8 max-w-[1600px] mx-auto">
         {/* The Outlet is where your specific pages (like Orders) will render */}
         <Outlet />
       </main>
 
       {/* --- STATIC FOOTER --- */}
-      <footer className="w-full py-12 mt-20 border-t border-[#B32C3A]/10 bg-[#0E0E0E]">
+      <footer className="w-full py-12 mt-10 border-t border-[#B32C3A]/10 bg-[#0E0E0E]">
         <div className="flex flex-col md:flex-row justify-between items-center px-12 max-w-7xl mx-auto gap-4">
           <div className="text-gray-600 font-['Inter'] text-xs uppercase tracking-widest">
             © developed by petros binis

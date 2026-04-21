@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
 
+interface Product {
+  quantity: string;
+  code: string;
+  description: string;
+  price: string;
+  isRegistered: string;
+}
+
 // Mock data structured by brand as requested
 const INITIAL_DATA = [
     {
@@ -23,7 +31,7 @@ function ProductsOfOrder() {
     return (
         <main className="px-8 max-w-[1600px] mx-auto pb-24">
             {/* Header Section matching Orders.tsx */}
-            <header className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <header className="mb-16 mt-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                     <h1 className="text-6xl font-extrabold font-headline tracking-tighter mb-4 text-on-surface">
                         Λεπτομέρειες Παραγγελίας
