@@ -1,13 +1,50 @@
 @import "tailwindcss";
 
- .material-symbols-outlined {
-              font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-            }
-            .tectonic-shadow {
-              box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
-            }
-            body {
-              background-color: #131313;
-              color: #e5e2e1;
-              font-family: 'Inter', sans-serif;
-            }
+@theme {
+  --color-primary: #80d5ff;
+  --color-on-primary: #003d5c;
+  --color-primary-container: #005580;
+  --color-on-primary-container: #b3e9ff;
+  --color-secondary: #b0cfe0;
+  --color-on-secondary: #1d3a47;
+  --color-secondary-container: #34515f;
+  --color-on-secondary-container: #cceafc;
+  --color-tertiary: #c7d2e4;
+  --color-on-tertiary: #2e2f42;
+  --color-tertiary-container: #454759;
+  --color-on-tertiary-container: #e4efff;
+  --color-error: #f2b8b5;
+  --color-on-error: #601410;
+  --color-error-container: #8c1d18;
+  --color-on-error-container: #ffdad6;
+  --color-surface: #0f1419;
+  --color-surface-bright: #353a42;
+  --color-surface-container-lowest: #0a0e13;
+  --color-surface-container-low: #161b22;
+  --color-surface-container: #1a202a;
+  --color-surface-container-high: #242d39;
+  --color-surface-container-highest: #2f3844;
+  --color-on-surface: #e2e1e6;
+  --color-on-surface-variant: #c7c6d0;
+  --color-outline: #91909a;
+  --color-outline-variant: #49484f;
+  --color-scrim: #000000;
+  --color-success: #10b981;
+  --color-info: #06b6d4;
+  --color-warning: #f59e0b;
+}
+
+/* Your existing custom styles */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.tectonic-shadow {
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
+}
+
+body {
+  background-color: #131313;
+  color: #e5e2e1;
+  font-family: 'Inter', sans-serif;
+}

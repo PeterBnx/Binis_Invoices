@@ -23,9 +23,11 @@ def get_products_of_order(request, order_number):
             "code": product.code,
             "description": product.description,
             "price": product.price,
-            "isRegistered": product.is_registered
+            "isRegistered": product.is_registered,
+            "brandFull": product.brand_full,
+            "brandShort": product.brand_short
         })
-        print(product.quantity, product.code, product.description, product.price, product.is_registered)
+        print(product.quantity, product.code, product.description, product.price, product.is_registered, product.brand_full, product.brand_short)
 
         
     return JsonResponse(products_list, safe=False)

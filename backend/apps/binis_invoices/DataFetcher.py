@@ -33,6 +33,8 @@ class DataFetcher:
         self.prod_descriptions = []
         self.prod_prices = []
         self.prod_is_registered = []
+        self.prod_brands_full = []
+        self.prod_brands_short = []
     
         self.brands_number_of_products = []
 
@@ -111,7 +113,9 @@ class DataFetcher:
                 all_cis_registered_codes[i],
                 all_cis_registered_descriptions[i],
                 all_cis_registered_prices[i],
-                True
+                True,
+                "Any",
+                "Any"
             ))
         return len(all_cis_registered_codes) > 0
 
@@ -174,7 +178,9 @@ class DataFetcher:
                 self.prod_codes[i],
                 self.prod_descriptions[i],
                 self.prod_prices[i],
-                self.prod_is_registered[i]
+                self.prod_is_registered[i],
+                self.prod_brands_full[i],
+                self.prod_brands_short[i]
             ))
 
         self.fetch_shipping_tax()
@@ -273,7 +279,6 @@ class DataFetcher:
         all_brands = Brand.objects.all().values()
 
         brands_dict = {brand['brand_full']: brand['brand_display'] for brand in all_brands}
-        number_of_products = sum(self.prod_quantities)
         brands_elements = self.soup.find_all(class_ = 'Stile11')
 
         self.fetch_brands_number_of_products()
@@ -337,6 +342,8 @@ class DataFetcher:
 
                 description = brands_types[i] + ' ' + brands_short[i]
                 self.prod_descriptions.append(description)
+                self.prod_brands_full.append(brands_full[i])
+                self.prod_brands_short.append(brands_short[i])
                 counter += 1
                 curr_prod_index += 1
 
