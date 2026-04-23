@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 interface Product {
   quantity: string;
@@ -13,20 +14,35 @@ const INITIAL_DATA = [
     {
         brand: "Titan Industrial",
         products: [
-            { id: 1, code: "EA-2024-X1-A", desc: "Primary Strut Assembly", price: "4,280.00", status: "Registered" },
-            { id: 2, code: "EA-2024-X1-D", desc: "Anchor Pivot Bolt", price: "45.00", status: "Registered" },
+            { id: 1, code: "EA-2024-X1-A", desc: "Primary Strut Assembly", price: "4,280.00", isRegistered: "Registered" },
+            { id: 2, code: "EA-2024-X1-D", desc: "Anchor Pivot Bolt", price: "45.00", isRegistered: "Registered" },
         ]
     },
     {
         brand: "Apex Hydraulics",
         products: [
-            { id: 3, code: "EA-2024-X1-B", desc: "Hydraulic Valve Core", price: "1,150.00", status: "Pending Sync" },
+            { id: 3, code: "EA-2024-X1-B", desc: "Hydraulic Valve Core", price: "1,150.00", isRegistered: "Pending Sync" },
         ]
     }
 ];
 
 function ProductsOfOrder() {
+    const location = useLocation();
+    const fetchedData = location.state?.orderData;
     const [brands, setBrands] = useState(INITIAL_DATA);
+
+    useEffect(() => {
+        if (fetchedData) {
+            // Logic to transform your backend data to match the UI structure
+            // This assumes 'fetchedData' is an array or object containing your products
+            console.log("Received data:", fetchedData);
+            
+            // If your API returns the exact structure needed:
+            // setBrands(fetchedData); 
+            
+            // Otherwise, map your API response here to match the brand/product structure
+        }
+    }, [fetchedData]);
 
     return (
         <main className="px-8 max-w-[1600px] mx-auto pb-24">
@@ -66,23 +82,6 @@ function ProductsOfOrder() {
                                 <p className="text-2xl font-black text-error">04</p>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="bg-surface-container-low p-6 rounded-xl border border-outline-variant/10 border-l-4 border-l-primary">
-                        <h3 className="text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2 text-on-surface">
-                            <span className="material-symbols-outlined text-sm">history</span>
-                            Action Log
-                        </h3>
-                        <ul className="space-y-3 text-[11px] font-medium text-on-surface-variant">
-                            <li className="flex justify-between">
-                                <span>Schema indexing...</span>
-                                <span className="opacity-50">12:04</span>
-                            </li>
-                            <li className="flex justify-between text-primary">
-                                <span>Auth successful</span>
-                                <span className="opacity-50">11:58</span>
-                            </li>
-                        </ul>
                     </div>
                 </aside>
 
@@ -149,12 +148,12 @@ function ProductsOfOrder() {
                                                 {/* Status (Non-editable badge) */}
                                                 <td className="px-8 py-5 text-right">
                                                     <span className={`inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-tight ${
-                                                        product.status === 'Registered' ? 'text-primary' : 'text-tertiary'
+                                                        product.isRegistered === 'Registered' ? 'text-primary' : 'text-tertiary'
                                                     }`}>
                                                         <span className={`w-1.5 h-1.5 rounded-full ${
-                                                            product.status === 'Registered' ? 'bg-primary' : 'bg-tertiary animate-pulse'
+                                                            product.isRegistered === 'Registered' ? 'bg-primary' : 'bg-tertiary animate-pulse'
                                                         }`} />
-                                                        {product.status}
+                                                        {product.isRegistered}
                                                     </span>
                                                 </td>
                                             </tr>

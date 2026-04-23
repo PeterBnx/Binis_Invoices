@@ -19,9 +19,13 @@ def get_products_of_order(request, order_number):
     products_list = []
     for product in data_fetcher.order_products:
         products_list.append({
-            "name": product.name,
             "quantity": product.quantity,
-            "price": product.price
+            "code": product.code,
+            "description": product.description,
+            "price": product.price,
+            "isRegistered": product.is_registered
         })
+        print(product.quantity, product.code, product.description, product.price, product.is_registered)
+
         
     return JsonResponse(products_list, safe=False)

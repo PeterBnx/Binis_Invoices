@@ -20,12 +20,21 @@ class DataFetcher:
         self.all_cis_registered_products = []
         self.emp_orders = []
 
+
+        self.emp_orders = []
+        self.emp_payload = {
+            "login": self.emp_name,
+            "password": self.emp_passwd
+        }
+
         self.order_products = []
         self.prod_quantities = []
         self.prod_codes = []
+        self.prod_descriptions = []
         self.prod_prices = []
         self.prod_is_registered = []
     
+        self.brands_number_of_products = []
 
     def reset_session(self):
         try:
@@ -61,6 +70,8 @@ class DataFetcher:
             "ctl00$MainContent$txtPwd": self.cis_passwd,
             "ctl00$MainContent$Button1": "Login"
         }
+
+
         self.session.post(
             self.cis_login_url,
             data=login_payload
@@ -76,9 +87,10 @@ class DataFetcher:
             "__EVENTVALIDATION": self.get_value("__EVENTVALIDATION", soup)
         }
         export_response = self.session.post(self.cis_items_url, data=export_payload)
+
         try:
             df = pd.read_excel(io.BytesIO(export_response.content))
-        except Exception:
+        except Exception as e:
             self.all_cis_registered_products = []
             return False
 
@@ -92,8 +104,10 @@ class DataFetcher:
             str(item).strip() for item in df.get("Τιμή Χονδρικής", [])
         ]
 
+
         for i in range(len(all_cis_registered_codes)):
             self.all_cis_registered_products.append(Product(
+                0,
                 all_cis_registered_codes[i],
                 all_cis_registered_descriptions[i],
                 all_cis_registered_prices[i],
@@ -103,15 +117,7 @@ class DataFetcher:
 
 
     def fetch_all_orders(self):
-
-
         self.reset_session()
-        self.emp_orders = []
-        self.emp_payload = {
-            "login": self.emp_name,
-            "password": self.emp_passwd
-        }
-
         self.session.post(
             self.emp_login_url,
             data=self.emp_payload
@@ -149,6 +155,8 @@ class DataFetcher:
         return True
     
     def fetch_order_products_data(self, order_number):
+        self.fetch_all_registered_products()
+
         order_url =  'https://www.emporiorologion.gr/admin/ordini3.php?ordine=' + order_number
         self.session.post(self.emp_login_url, data=self.emp_payload)
         r = self.session.get(order_url)
@@ -171,8 +179,6 @@ class DataFetcher:
 
         self.fetch_shipping_tax()
         self.fetch_client_afm()
-
-        self.print_products_data()
 
 
     # Get Products' Quantities
@@ -204,8 +210,8 @@ class DataFetcher:
     # For each item, check if it is registered
     def fetch_products_is_registered(self):
         self.prod_is_registered = []
-        for prod_code in self.prod_codes:
-            self.prod_is_registered.append(prod_code in self.all_cis_registered_codes)
+        for prod_code in self.prod_codes:   
+            self.prod_is_registered.append(any(prod.code == prod_code for prod in self.all_cis_registered_products))
 
 
     # Calculate Shipping Tax
@@ -261,44 +267,41 @@ class DataFetcher:
             "watch" : "Ρολόι",
             "eye" : "Γυαλιά",
             "jew" : "Κόσμημα",
-            "sunglass" : "Γυαλιά Ηλίου",
-            "glass": "Γυαλιά Ηλίου"
+            "sunglass" : "Γυαλιά",
+            "glass": "Γυαλιά"
         }
-        # db = DB()
+        all_brands = Brand.objects.all().values()
 
-        b = Brand(brand_full="Test Full", brand_display="Test Display")
-        b.save()
-
-        all_brands = Brand.objects.all()
-        print(all_brands)
-        brands_dict = {item[1]: item[2] for item in db.get_all_brands()}
-        self.number_of_products = sum(self.prod_quantities)
+        brands_dict = {brand['brand_full']: brand['brand_display'] for brand in all_brands}
+        number_of_products = sum(self.prod_quantities)
         brands_elements = self.soup.find_all(class_ = 'Stile11')
 
         self.fetch_brands_number_of_products()
 
         # initializing brands_full, brands_short and brands_types
+        brands_full = []
+        brands_short = []
+        brands_types = []
         for element in brands_elements:
             brand_name_full = element.get_text().strip().upper()
-            self.brands_descriptions.append(brand_name_full)
-            self.brands_full.append(brand_name_full)
+            brands_full.append(brand_name_full)
             # starting format of brand_short
-            if (brand_name_full in self.brands_dict.keys()):
-                brand_name_short = self.brands_dict[brand_name_full]
+            if (brand_name_full in brands_dict.keys()):
+                brand_name_short = brands_dict[brand_name_full]
             else: 
                 brand_name_short = brand_name_full
-            self.brands_short.append(brand_name_short)
+            brands_short.append(brand_name_short)
 
             # format the type
             # if a word from types dict is found in brand full name, append the according brand type
-            for type in self.types_dict.keys():
+            for type in types_dict.keys():
                 is_watch = True
                 if type in brand_name_full:
-                    self.brands_types.append(self.types_dict[type])
+                    brands_types.append(types_dict[type])
                     is_watch = False
                     break
                 if (is_watch):
-                    self.brands_types.append('Ρολόι')
+                    brands_types.append('Ρολόι')
                     break
 
         curr_prod_index = 0
@@ -308,39 +311,58 @@ class DataFetcher:
                 # If product is registered update the value of brand_short in DB (and temp dictionary) or insert a new
                 # one if the brand_full does not exist at all
                 if (self.prod_is_registered[curr_prod_index]):
-                    index = self.all_cis_registered_codes.index(self.prod_codes[curr_prod_index])
-                    descr = self.all_cis_registered_descriptions[index]
+                    target_code = self.prod_codes[curr_prod_index]
+
+                    index = next(
+                        (i for i, p in enumerate(self.all_cis_registered_products) 
+                        if p.code == target_code), 
+                        -1 # Default value if not found
+                    )
+                    descr = self.all_cis_registered_products[index].description
 
                     brand_type = descr.split()[0] # get type of registered product
                     brand_short = ' '.join(descr.split()[1:]) # get brand short
-                    self.brands_types[i] = brand_type
-                    self.brands_short[i] = brand_short
+                    brands_types[i] = brand_type
+                    brands_short[i] = brand_short
 
-                    brand_found_db = db.get_brand_by_brand_full(self.brands_full[i])
-                    if (brand_found_db and brand_found_db[2] != brand_short):
-                        db.update_brand(self.brands_full[i], brand_short)
+                    brand_found_db = brands_dict.get(brands_full[i])
+                    
+
+                    if (brand_found_db and brand_found_db != brand_short):
+                        self.update_db_brand(brands_full[i], brand_short)
                     elif (not brand_found_db):
-                        db.insert_brand(self.brands_full[i], brand_short)
+                        self.insert_db_brand(brands_full[i], brand_short)
 
-                    self.brands_dict.update({self.brands_full[i] : brand_short})                        
+                    brands_dict.update({brands_full[i] : brand_short})                        
 
-                description = self.brands_types[i] + ' ' + self.brands_short[i]
+                description = brands_types[i] + ' ' + brands_short[i]
                 self.prod_descriptions.append(description)
-                self.prod_brands_full.append(self.brands_full[i])
-                self.prod_brands_short.append(self.brands_short[i])
-                self.prod_types.append(self.brands_types[i])
                 counter += 1
                 curr_prod_index += 1
 
 
+    def update_db_brand(self, brand_full: str, brand_short: str):
+        b = Brand.objects.filter(brand_full=brand_full).first()
+        b.brand_display = brand_short
+        b.save()
+
+    def insert_db_brand(self, brand_full: str, brand_short: str):
+        b = Brand(brand_full=brand_full, brand_display=brand_short)
+        b.save()
+
     # Get Client AFM
     def fetch_client_afm(self):
         url_elements = self.soup.find_all('a', limit=7)
-        client_url_href = url_elements[len(url_elements) - 1].get('href')
+        client_url_href = url_elements[-1].get('href') # Simplified index
         client_url = 'https://www.emporiorologion.gr/admin/' + client_url_href
         client_page = self.session.get(client_url)
-        client_soup = BeautifulSoup(client_page.content, 'html.parser') 
-        self.client_afm = client_soup.find('input', attrs={'id': 'nome222'}).get('value')
+        client_soup = BeautifulSoup(client_page.content, 'html.parser')
+        afm_input = client_soup.find('input', attrs={'id': 'nome222'})
+        
+        if afm_input:
+            self.client_afm = afm_input.get('value')
+        else:
+            print(client_soup.prettify())
 
     # UTILS
 

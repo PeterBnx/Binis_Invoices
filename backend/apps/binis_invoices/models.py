@@ -9,5 +9,5 @@ class Order(models.Model):
 
 class Brand(models.Model):
     id = models.AutoField(primary_key=True)
-    brand_full = models.CharField(max_length=30)
+    brand_full = models.CharField(max_length=30, unique=True)
     brand_display = models.CharField(max_length=30)

@@ -12,17 +12,17 @@ function OrderRow(props: Props) {
             onClick={props.onClick}
             className="cursor-pointer transition-colors group relative"
         >
-            {/* The "Border" cells */}
-            <td className="px-8 py-6 border-y border-transparent group-hover:border-white group-hover:bg-white/5 transition-all">
+
+            <td className="px-8 py-6 w-1/5 border-y border-transparent group-hover:border-white group-hover:bg-white/5 transition-all">
                 <span className="font-mono text-sm">{props.order_id}</span>
             </td>
-            <td className="px-8 py-6 border-y border-transparent group-hover:border-white group-hover:bg-white/5 transition-all">
+            <td className="px-8 py-6 w-1/4 border-y border-transparent group-hover:border-white group-hover:bg-white/5 transition-all">
                 <div className="text-sm font-semibold">{props.client}</div>
             </td>
-            <td className="px-8 py-6 border-y border-transparent group-hover:border-white group-hover:bg-white/5 transition-all">
+            <td className="px-8 py-6 w-1/4 border-y border-transparent group-hover:border-white group-hover:bg-white/5 transition-all">
                 <span className="text-sm">{props.date}</span>
             </td>
-            <td className="px-8 py-6 border-y border-transparent group-hover:border-white group-hover:bg-white/5 transition-all">
+            <td className="px-8 py-6 w-1/4 border-y border-transparent group-hover:border-white group-hover:bg-white/5 transition-all">
                 <span className="text-sm">{props.price}</span>
             </td>
             {/* Last cell handles the right border corner */}
