@@ -18,23 +18,26 @@ type GroupedProducts = {
 function ProductsOfOrder() {
     const location = useLocation();
     const orderData = useMemo(() => location.state?.orderData || [], [location.state?.orderData]);    
-    const [data, setData] = useState<Product[]>(orderData);
+    const [productsData, setProductsData] = useState<Product[]>(orderData.products);
+    const [showInvoiceWarning, setShowInvoiceWarning] = useState<boolean>(false);
+    const [productsNotRegistered, setProductsNotRegistered] = useState<Product[]>([]);
+    const [loading, setIsLoading] = useState<boolean>(false);
     
     useEffect(() => {
-        setData(orderData);
+        setProductsData(orderData.products);
     }, [orderData]);
 
     const groupedData = useMemo(() => {
-        return data.reduce((acc: GroupedProducts, product: Product) => {
+        return productsData .reduce((acc: GroupedProducts, product: Product) => {
             const brand = product.brandShort || 'Δεν Βρέθηκε';
             if (!acc[brand]) acc[brand] = [];
             acc[brand].push(product);
             return acc;
         }, {});
-    }, [data]);
+    }, [productsData]);
 
     const updateQuantity = (productCode: string, amount: number, isDirectSet: boolean = false) => {
-        setData(prev => prev.map(p => {
+        setProductsData(prev => prev.map(p => {
             if (p.code === productCode) {
                 let newQty;
                 if (isDirectSet) {
@@ -49,7 +52,7 @@ function ProductsOfOrder() {
     };
 
     const updateProduct = (productCode: string, key: keyof Product, value: string) => {
-    setData(prev => prev.map(p => {
+    setProductsData(prev => prev.map(p => {
         if (p.code === productCode) {
             return { ...p, [key]: value };
         }
@@ -58,13 +61,43 @@ function ProductsOfOrder() {
     };
 
     const updateBrand = (brandName: string, value: string) => {
-        setData(prev => prev.map(p => {
+        setProductsData(prev => prev.map(p => {
             if (p.brandShort === brandName) {
                 const productType = p.description.split(" ")[0];
                 return {...p, ['brandShort']: value.trim(), ['description']: productType + ' ' + value.trim()};
             }
             return p;
         }))
+    }
+
+    const onExtractInvoiceClick = (checkProducts: boolean) => {
+        const missingProducts: Product[] = productsData.filter(p => !p.isRegistered);
+        const allProductsRegistered = missingProducts.length === 0;
+        setProductsNotRegistered(missingProducts);
+        setShowInvoiceWarning(!allProductsRegistered);
+
+        if (!allProductsRegistered && checkProducts) {
+            console.log(missingProducts);
+            return;
+        }
+        const source = new EventSource(`http://localhost:8000/binis_invoices/orders/${orderData.orderNumber}/extract_invoice`);
+        source.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === 'SKIPPED') {
+                console.log(`Skipped product: ${data.code}`);
+            } else if (data.type === 'COMPLETE') {
+                console.log(`Added product: ${data.code}`);
+            } else if (data.type === 'FINISHED') {
+                console.log("Invoice process complete. Closing connection.");
+                source.close();
+            }
+        };
+
+        source.onerror = (err) => {
+            console.error("EventSource failed:", err);
+            source.close();
+        };
     }
     
 return (
@@ -76,24 +109,88 @@ return (
                     Λεπτομέρειες Παραγγελίας
                 </h1>
                 <p className="text-on-surface-variant font-light tracking-wide max-w-2xl">
-                    Επεξεργασία προϊόντων ανά κατασκευαστή και έλεγχος στοιχείων.
+                    Παραγγελία {orderData.orderNumber}
                 </p>
             </div>
             <div className="flex gap-4">
-                <button className="px-6 py-3 border border-outline-variant/20 hover:bg-on-surface/5 transition-all text-sm font-semibold tracking-wide flex items-center gap-2 rounded-lg text-on-surface">
+                <button className="cursor-pointer px-6 py-3 border border-outline-variant/20 hover:bg-on-surface/5 transition-all text-sm font-semibold tracking-wide flex items-center gap-2 rounded-lg text-on-surface"
+                onClick={() => onExtractInvoiceClick(true)}>
                     <span className="material-symbols-outlined text-sm">description</span>
-                    Invoice Extractor
+                    Εξαγωγή Τιμολογίου
                 </button>
-                <button className="px-6 py-3 bg-primary-container text-on-primary-container hover:opacity-90 transition-all text-sm font-semibold tracking-wide flex items-center gap-2 rounded-lg shadow-sm">
+                <button className="cursor-pointer px-6 py-3 bg-primary-container text-on-primary-container hover:opacity-90 transition-all text-sm font-semibold tracking-wide flex items-center gap-2 rounded-lg shadow-sm">
                     <span className="material-symbols-outlined text-sm">add_box</span>
-                    Εισαγωγή Προϊόντος
+                    Εισαγωγή Προϊόντων
                 </button>
             </div>
         </header>
 
+        {/* Invoice Warning Popup */}
+        {showInvoiceWarning && (
+        <div className="overscroll-none fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="relative bg-surface-container-high border border-outline-variant/20 p-8 rounded-2xl max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+
+                <button 
+                    onClick={() => setShowInvoiceWarning(false)}
+                    className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-white/10 hover:text-on-surface transition-all cursor-pointer"
+                    aria-label="Close"
+                >
+                    <span className="material-symbols-outlined text-2xl">close</span>
+                </button>
+
+                {/* Header */}
+                <div className="flex items-center gap-4 text-error mb-4 pr-8"> {/* Added padding-right so text doesn't hit the X */}
+                    <span className="select-none material-symbols-outlined text-4xl">warning</span>
+                    <h3 className="select-none text-xl font-bold text-on-surface">Εκκρεμεί Καταχώρηση</h3>
+                </div>
+
+                <p className="text-on-surface-variant mb-6 leading-relaxed">
+                    Υπάρχουν {productsNotRegistered.length} είδη που δεν έχουν καταχωρηθεί ακόμα. Παρακαλώ ελέγξτε τα παρακάτω:
+                </p>
+
+                <div className="mb-8 overflow-hidden border border-outline-variant/10 rounded-xl bg-black/20">
+                    <div className="max-h-48 overflow-y-auto p-4 custom-scrollbar">
+                        <ul className="space-y-3">
+                            {productsNotRegistered.map((product) => (
+                                <li key={product.code} className="flex flex-col gap-1 pb-3 border-b border-outline-variant/5 last:border-0 last:pb-0">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-mono font-bold text-error bg-error/10 px-2 py-0.5 rounded">
+                                            {product.code}
+                                        </span>
+                                        <span className="text-[10px] text-on-surface-variant uppercase font-medium">
+                                            Ποσ: {product.quantity}
+                                        </span>
+                                    </div>
+                                    <span className="text-xs text-on-surface/70 truncate italic">
+                                        {product.description || "Χωρίς περιγραφή"}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                    <button 
+                        onClick={() => onExtractInvoiceClick(false)}
+                        className="cursor-pointer py-3 border border-on-primary-container text-on-primary-container font-bold rounded-lg hover:bg-white/5 transition-all text-sm"
+                    >
+                        Εξαγωγή Τιμολογίου
+                    </button>
+                    <button 
+                        onClick={() => setShowInvoiceWarning(false)}
+                        className="cursor-pointer py-3 bg-primary text-white font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition-all text-sm"
+                    >
+                        Καταχώρηση Ειδών
+                    </button>
+                </div>
+            </div>
+        </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Column: Stats Cards */}
             <aside className="lg:col-span-3 space-y-6">
+                {/* Statistics Card */}
                 <div className="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -108,9 +205,22 @@ return (
                         </div>
                     </div>
                 </div>
+
+                {/* Order & Client Details Card */}
+                <div className="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 space-y-4">                                         
+                    <div>
+                        <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">πελατης</p>
+                        <p className="text-base font-bold text-on-surface">{orderData.clientName}</p>
+                    </div>
+
+                    <div>
+                        <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">ΑΦΜ</p>
+                        <p className="text-sm font-medium text-on-surface">{orderData.clientVAT}</p>
+                    </div>
+                </div>
             </aside>
 
-            {/* Right Column: Tables Grouped by Brand */}
+            {/* Products */}
             <div className="lg:col-span-9 space-y-12">
                 {Object.entries(groupedData).map(([brandName, products]) => (
                     <section key={brandName} className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/10">
@@ -270,7 +380,6 @@ return (
                                             </div>
                                         </td>
 
-                                        {/* Toggleable Boolean Status */}
                                         <td className="px-4 py-3 text-center">
                                             <div 
                                                 className={`inline-block text-xs font-bold p-2 uppercase rounded-md transition-all 

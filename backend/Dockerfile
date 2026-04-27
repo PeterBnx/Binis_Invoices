@@ -5,11 +5,18 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app/
 
-# Install dependencies from the backend folder
+# Just install the python package first
+RUN pip install playwright
+
+# Use Playwright's own dependency manager to install system libs + browser
+RUN playwright install-deps chromium
+RUN playwright install chromium
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy everything from backend/ to /app/
+
+# 4. Copy project
 COPY . .
 
 EXPOSE 8000

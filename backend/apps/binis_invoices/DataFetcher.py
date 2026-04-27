@@ -1,6 +1,7 @@
 from .Product import Product
 from .Order import Order
 from .models import Brand
+from .Shared import Shared
 from requests import Session
 from bs4 import BeautifulSoup
 from re import compile
@@ -20,6 +21,11 @@ class DataFetcher:
         self.all_cis_registered_products = []
         self.emp_orders = []
 
+        shared = Shared()
+        self.emp_name = shared.emp_name
+        self.emp_passwd = shared.emp_passwd 
+        self.cis_name = shared.cis_name
+        self.cis_passwd = shared.cis_passwd
 
         self.emp_orders = []
         self.emp_payload = {
@@ -35,8 +41,10 @@ class DataFetcher:
         self.prod_is_registered = []
         self.prod_brands_full = []
         self.prod_brands_short = []
-    
         self.brands_number_of_products = []
+
+        self.client_afm = -1
+        self.client_name = ""
 
     def reset_session(self):
         try:
@@ -365,9 +373,15 @@ class DataFetcher:
         client_page = self.session.get(client_url)
         client_soup = BeautifulSoup(client_page.content, 'html.parser')
         afm_input = client_soup.find('input', attrs={'id': 'nome222'})
+        name_input = client_soup.find('input', attrs={'id': 'nome'})
         
         if afm_input:
             self.client_afm = afm_input.get('value')
+        else:
+            print(client_soup.prettify())
+
+        if name_input:
+            self.client_name = name_input.get('value')
         else:
             print(client_soup.prettify())
 

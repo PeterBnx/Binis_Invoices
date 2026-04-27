@@ -11,6 +11,7 @@ interface Order {
 
 function Orders() {
   const [orders, setOrders] = useState<Order[] | null>(null);
+  const [reload, setReload] = useState<boolean>(false);
 
   const navigate = useNavigate();
 
@@ -18,19 +19,41 @@ function Orders() {
     fetch("http://localhost:8000/binis_invoices/orders")
       .then((res) => res.json())
       .then((data) => setOrders(data));
-  }, []);
+  }, [reload]);
 
-  const onOrderClick = (id: string): void => {
-    navigate('/products_of_order');
+const [isLoading, setIsLoading] = useState(false);
+
+const onOrderClick = (id: string): void => {
+    // Start loading
+    setIsLoading(true);
+
     fetch(`http://localhost:8000/binis_invoices/orders/${id}`)
-      .then(res => res.json())
-      .then(data => {console.log(data); navigate('/products_of_order', { state: { orderData: data } })})
+      .then(res => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+      })
+      .then(data => {
+          navigate('/products_of_order', { state: { orderData: data } });
+      })
+      .catch(err => {
+          console.error(err);
+          alert("Σφάλμα κατά τη φόρτωση της παραγγελίας.");
+      })
+      .finally(() => {
+          setIsLoading(false);
+      });
+  };
+
+  const onReloadClick = () => {
+    setOrders(null);
+    const temp: boolean = reload;
+    setReload(!temp);
   }
 
   return (
     <main className="max-w-[1600px] mx-auto p-6">
       <header className="mb-4">
-        <h1 className="text-4xl font-extrabold tracking-tighter mb-4 text-on-surface">
+        <h1 className="text-4xl font-extrabold tracking-tighter text-on-surface">
           Παραγγελίες
         </h1>
         <p className="text-on-surface-variant font-light tracking-wide max-w-2xl">
@@ -38,10 +61,18 @@ function Orders() {
         </p>
       </header>
 
+      {isLoading && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-surface-dark/80 backdrop-blur-md">
+            {/* Simple CSS Spinner */}
+            <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
+            <p className="text-on-surface font-medium animate-pulse tracking-widest uppercase text-xs">
+                Φoρτωση Προϊoντων της Παραγγελiας...
+            </p>
+        </div>
+        )}
+
       <section className="bg-surface-container-low rounded-xl border border-outline-variant/10 shadow-xl">
-        {/* Prevent layout breaking on small widths */}
         <div className="min-w-[900px] ">
-          {/* Header Table */}
           <table className="w-full table-auto border-separate border-spacing-0">
             <thead className="bg-surface-container-low">
               <tr>
@@ -62,8 +93,8 @@ function Orders() {
             </thead>
           </table>
 
-          {/* Scrollable Body */}
-          <div className="h-[600px] overflow-auto">
+          {/* Body */}
+          <div className="h-[470px] overflow-auto">
             <table className="w-full table-auto border-separate border-spacing-0">
               <tbody className="divide-y divide-outline-variant/10">
                 {!orders ? (
@@ -71,7 +102,15 @@ function Orders() {
                   <tr><td colSpan={5} className="py-10 text-center">Φόρτωση...</td></tr>
                 ) : orders.length === 0 ? (
                   /* Empty State */
-                  <tr><td colSpan={5} className="py-10 text-center text-on-surface-variant">Δεν βρέθηκαν παραγγελίες.</td></tr>
+                  <tr>
+                    <td colSpan={5} className="py-10 text-center text-on-surface-variant">
+                      <p>Δεν βρέθηκαν παραγγελίες.</p>
+                  <button className="px-4 py-2 m-4 cursor-pointer border border-gray-300 rounded hover:bg-gray-100"
+                  onClick={() => onReloadClick()}>
+                    Επαναφόρτωση
+                      </button>
+                    </td>
+                  </tr>
                 ) : (
                   /* Data State */
                   orders.map((order) => (
