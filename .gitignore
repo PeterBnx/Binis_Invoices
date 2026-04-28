@@ -7,6 +7,7 @@ db.sqlite3
 static/
 media/
 postgres_data/
+shared_data
 
 # Logs
 logs

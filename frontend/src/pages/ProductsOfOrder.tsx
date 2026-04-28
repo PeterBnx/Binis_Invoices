@@ -1,4 +1,4 @@
-import {  useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 interface Product {
@@ -15,20 +15,24 @@ type GroupedProducts = {
     [brand: string]: Product[];
 };
 
+type Brand = {
+    brandFull: string;
+    brandShort: string;
+}
+
 function ProductsOfOrder() {
     const location = useLocation();
     const orderData = useMemo(() => location.state?.orderData || [], [location.state?.orderData]);    
     const [productsData, setProductsData] = useState<Product[]>(orderData.products);
+    const [shippingTax, setShippingTax] = useState<string>(orderData.shippingTax);
     const [showInvoiceWarning, setShowInvoiceWarning] = useState<boolean>(false);
     const [productsNotRegistered, setProductsNotRegistered] = useState<Product[]>([]);
-    const [loading, setIsLoading] = useState<boolean>(false);
-    
-    useEffect(() => {
-        setProductsData(orderData.products);
-    }, [orderData]);
+    const [extractionStatus, setExtractionStatus] = useState<Record<string, 'pending' | 'loading' | 'completed' | 'skipped'>>({});
+    const [isExtracting, setIsExtracting] = useState(false);
+    const [updatedBrands, setUpdatedBrands] = useState<Brand[]>([]);
 
     const groupedData = useMemo(() => {
-        return productsData .reduce((acc: GroupedProducts, product: Product) => {
+        return productsData.reduce((acc: GroupedProducts, product: Product) => {
             const brand = product.brandShort || 'Δεν Βρέθηκε';
             if (!acc[brand]) acc[brand] = [];
             acc[brand].push(product);
@@ -52,53 +56,111 @@ function ProductsOfOrder() {
     };
 
     const updateProduct = (productCode: string, key: keyof Product, value: string) => {
-    setProductsData(prev => prev.map(p => {
-        if (p.code === productCode) {
-            return { ...p, [key]: value };
-        }
-        return p;
+        setProductsData(prev => prev.map(p => {
+            if (p.code === productCode) {
+                return { ...p, [key]: value };
+            }
+            return p;
         }));
     };
 
-    const updateBrand = (brandName: string, value: string) => {
-        setProductsData(prev => prev.map(p => {
+    const updateBrand = (brandName: string, newValue: string) => {
+        const trimmedValue = newValue.trim();
+        const nextProducts = productsData.map(p => {
             if (p.brandShort === brandName) {
                 const productType = p.description.split(" ")[0];
-                return {...p, ['brandShort']: value.trim(), ['description']: productType + ' ' + value.trim()};
+                return { 
+                    ...p, 
+                    brandShort: trimmedValue, 
+                    description: `${productType} ${trimmedValue}` 
+                };
             }
             return p;
-        }))
+        });
+        const matchingProduct = nextProducts.find(p => p.brandShort === trimmedValue);
+        if (matchingProduct) {
+            const brandToChange: Brand = {
+                brandFull: matchingProduct.brandFull,
+                brandShort: trimmedValue
+            };
+
+            const uniqueMap = new Map(
+                [...updatedBrands, brandToChange].map(b => [b.brandFull, b])
+            );
+            const nextBrands = Array.from(uniqueMap.values());
+            setProductsData(nextProducts);
+            setUpdatedBrands(nextBrands);
+        }
+    };
+
+    const log = () => {
+        console.log(updatedBrands);
     }
 
-    const onExtractInvoiceClick = (checkProducts: boolean) => {
-        const missingProducts: Product[] = productsData.filter(p => !p.isRegistered);
-        const allProductsRegistered = missingProducts.length === 0;
-        setProductsNotRegistered(missingProducts);
-        setShowInvoiceWarning(!allProductsRegistered);
+    const updateShippingTax = (val: string) => {
+        setShippingTax(val)
+    }
 
-        if (!allProductsRegistered && checkProducts) {
-            console.log(missingProducts);
+    const onRegisterProducts = () => {
+        setShowInvoiceWarning(false);
+        log()
+    }
+
+    const onExtractInvoiceClick = async(checkProducts: boolean) => {
+        const missingProducts = productsData.filter(p => !p.isRegistered);
+        if (missingProducts.length > 0 && checkProducts) {
+            setProductsNotRegistered(missingProducts);
+            setShowInvoiceWarning(true);
             return;
         }
-        const source = new EventSource(`http://localhost:8000/binis_invoices/orders/${orderData.orderNumber}/extract_invoice`);
-        source.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            
-            if (data.type === 'SKIPPED') {
-                console.log(`Skipped product: ${data.code}`);
-            } else if (data.type === 'COMPLETE') {
-                console.log(`Added product: ${data.code}`);
-            } else if (data.type === 'FINISHED') {
-                console.log("Invoice process complete. Closing connection.");
-                source.close();
-            }
-        };
 
-        source.onerror = (err) => {
-            console.error("EventSource failed:", err);
-            source.close();
-        };
-    }
+        setIsExtracting(true);
+        setShowInvoiceWarning(false);
+        
+        try {
+            const response = await fetch('http://localhost:8000/binis_invoices/store_data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    "products": productsData,
+                    "client_name": orderData.clientName,
+                    "client_afm": orderData.clientVAT,
+                    "order_number": orderData.orderNumber,
+                    "shipping_tax": shippingTax,
+                    "updated_brands": updatedBrands,
+                 }),
+            });
+            
+            const { session_id } = await response.json();
+            const source = new EventSource(`http://localhost:8000/binis_invoices/extract_invoice/${session_id}`);
+
+            source.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.code) {
+                    setExtractionStatus(prev => ({
+                        ...prev,
+                        [data.code]: data.type === 'START' ? 'loading' : 
+                                    data.type === 'COMPLETE' ? 'completed' : 'skipped'
+                    }));
+                }
+
+                if (data.type === 'FINISHED') {
+                    source.close();
+                    setIsExtracting(false);
+                }
+            };
+
+            source.onerror = () => {
+                source.close();
+                setIsExtracting(false);
+            };
+
+        } catch (err) {
+            console.error("Failed to initiate extraction", err);
+            setIsExtracting(false);
+        }
+    };
     
 return (
     <main className="px-8 max-w-[1600px] mx-auto pb-24">
@@ -118,9 +180,10 @@ return (
                     <span className="material-symbols-outlined text-sm">description</span>
                     Εξαγωγή Τιμολογίου
                 </button>
-                <button className="cursor-pointer px-6 py-3 bg-primary-container text-on-primary-container hover:opacity-90 transition-all text-sm font-semibold tracking-wide flex items-center gap-2 rounded-lg shadow-sm">
+                <button className="cursor-pointer px-6 py-3 bg-primary-container text-on-primary-container hover:opacity-90 transition-all text-sm font-semibold tracking-wide flex items-center gap-2 rounded-lg shadow-sm"
+                    onClick={() => onRegisterProducts()}>
                     <span className="material-symbols-outlined text-sm">add_box</span>
-                    Εισαγωγή Προϊόντων
+                    Καταχώρηση Ειδών
                 </button>
             </div>
         </header>
@@ -177,7 +240,7 @@ return (
                         Εξαγωγή Τιμολογίου
                     </button>
                     <button 
-                        onClick={() => setShowInvoiceWarning(false)}
+                        onClick={() => onRegisterProducts()}
                         className="cursor-pointer py-3 bg-primary text-white font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition-all text-sm"
                     >
                         Καταχώρηση Ειδών
@@ -185,6 +248,89 @@ return (
                 </div>
             </div>
         </div>
+        )}
+
+       {isExtracting && (
+            <div className="overscroll-none fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+                <div className="relative bg-surface-container-high border border-outline-variant/30 p-8 rounded-2xl max-w-lg w-full shadow-2xl animate-in fade-in zoom-in duration-300">
+                    
+                    {/* Header with Global Spinner */}
+                    <div className="flex items-center gap-5 mb-8">
+                        <div className="relative">
+                            <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-black text-on-surface tracking-tight">Εξαγωγή Τιμολογίου</h3>
+                            <p className="text-sm text-on-surface-variant flex items-center gap-2">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                </span>
+                                Παρακαλώ περιμένετε...
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Live Progress List */}
+                    <div className="mb-8 border border-outline-variant/10 rounded-xl bg-black/40 shadow-inner">
+                        <div className="max-h-[350px] overflow-y-auto p-2 custom-scrollbar">
+                            <div className="space-y-1">
+                                {productsData.map((product) => {
+                                    const status = extractionStatus[product.code] || 'pending';
+                                    return (
+                                        <div 
+                                            key={product.code} 
+                                            className={`flex items-center justify-between p-3 rounded-lg transition-all ${
+                                                status === 'loading' ? 'bg-primary/5 ring-1 ring-primary/20' : ''
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                {/* Dynamic Status Icon */}
+                                                <div className="flex items-center justify-center w-6">
+                                                    {status === 'completed' && <span className="material-symbols-outlined text-emerald-400 scale-110">check_circle</span>}
+                                                    {status === 'skipped' && <span className="material-symbols-outlined text-rose-400 animate-pulse">error</span>}
+                                                    {status === 'pending' && <span className="w-2 h-2 bg-on-surface/20 rounded-full"></span>}
+                                                    {status === 'loading' && <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>}
+                                                </div>
+                                                
+                                                <div className="flex flex-col">
+                                                    <span className={`text-sm font-mono font-bold tracking-wider ${
+                                                        status === 'completed' ? 'text-emerald-400' : 
+                                                        status === 'skipped' ? 'text-rose-400' : 'text-on-surface/40'
+                                                    }`}>
+                                                        {product.code}
+                                                    </span>
+                                                    <span className="text-[10px] text-on-surface-variant/60 truncate max-w-[200px]">
+                                                        {product.description || "Προϊόν"}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Badge Status */}
+                                            <div className="flex flex-col items-end">
+                                                <span className={`text-[10px] font-black uppercase tracking-tighter px-2 py-1 rounded ${
+                                                    status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' : 
+                                                    status === 'skipped' ? 'bg-rose-500/10 text-rose-500' : 'text-on-surface/20'
+                                                }`}>
+                                                    {status === 'completed' ? 'Done' : status === 'skipped' ? 'Skipped' : 'Waiting'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Note */}
+                    <div className="flex items-center gap-3 bg-on-surface/5 p-4 rounded-xl">
+                        <span className="material-symbols-outlined text-on-surface-variant text-lg">info</span>
+                        <p className="text-[11px] text-on-surface-variant leading-tight">
+                            Η διαδικασία είναι αυτοματοποιημένη. Παρακαλώ μην ανανεώσετε τη σελίδα μέχρι να ολοκληρωθεί η λήψη του στιγμιότυπου.
+                        </p>
+                    </div>
+                </div>
+            </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -216,6 +362,33 @@ return (
                     <div>
                         <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">ΑΦΜ</p>
                         <p className="text-sm font-medium text-on-surface">{orderData.clientVAT}</p>
+                    </div>
+
+                    <div>
+                    <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">
+                        εξοδα αποστολης
+                    </p>
+                    {/* Changed <p> to <div> to allow the child <div> */}
+                    <div className="flex items-center gap-1 text-sm font-medium text-on-surface">
+                        <span>&#8364;</span>
+                        <div 
+                        contentEditable 
+                        suppressContentEditableWarning
+                        onBlur={(e) => {
+                            const text = e.currentTarget.textContent || "0";
+                            let val = parseFloat(text);
+                            
+                            // Validation logic
+                            if (isNaN(val) || val < 0) val = 0;
+                            if (val > 10000) val = 10000;
+                            e.currentTarget.textContent = val.toString();
+                            updateShippingTax(val.toString());
+                        }}
+                        className="inline-block min-w-[4rem] text-center text-sm font-mono font-bold p-1 text-on-surface rounded-md transition-all cursor-text outline-none hover:bg-primary/10 focus:bg-primary/10 focus:ring-1 focus:ring-primary/30 border border-primary"
+                        >
+                        {shippingTax}
+                        </div>
+                    </div>
                     </div>
                 </div>
             </aside>

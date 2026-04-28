@@ -43,6 +43,7 @@ class DataFetcher:
         self.prod_brands_short = []
         self.brands_number_of_products = []
 
+        self.shipping_tax = 0
         self.client_afm = -1
         self.client_name = ""
 
@@ -231,19 +232,34 @@ class DataFetcher:
     # Calculate Shipping Tax
     def fetch_shipping_tax(self):
         spedizione_element = self.soup.find('input', id = 'spedizione')
-        spedizione = float(spedizione_element.get('value'))
+        if spedizione_element:
+            spedizione = float(spedizione_element.get('value'))
+        else:
+            spedizione = 0
 
         p_dropshipping_element = self.soup.find('input', attrs={'name': 'packing_dropshipping'})
-        p_dropshipping = float(p_dropshipping_element.get('value'))
+        if p_dropshipping_element:
+            p_dropshipping = float(p_dropshipping_element.get('value'))
+        else:
+            p_dropshipping = 0
 
         handling_element = self.soup.find('input', attrs={'name': 'handling'})
-        handling = float(handling_element.get('value'))
+        if handling_element:
+            handling = float(handling_element.get('value'))
+        else:
+            handling = 0
 
         assicurazione_element = self.soup.find('input', attrs={'name': 'assicurazione'})
-        assicurazione = float(assicurazione_element.get('value'))
+        if assicurazione_element:
+            assicurazione = float(assicurazione_element.get('value'))
+        else:
+            assicurazione = 0
 
         maggiorazione_element = self.soup.find('input', attrs={'name': 'maggiorazione'})
-        maggiorazione = float(maggiorazione_element.get('value'))
+        if maggiorazione_element:
+            maggiorazione = float(maggiorazione_element.get('value'))
+        else:
+            maggiorazione = 0
 
         self.shipping_tax = round((spedizione + p_dropshipping + handling + assicurazione + maggiorazione), 2)
 
@@ -329,10 +345,9 @@ class DataFetcher:
                     index = next(
                         (i for i, p in enumerate(self.all_cis_registered_products) 
                         if p.code == target_code), 
-                        -1 # Default value if not found
+                        -1
                     )
                     descr = self.all_cis_registered_products[index].description
-
                     brand_type = descr.split()[0] # get type of registered product
                     brand_short = ' '.join(descr.split()[1:]) # get brand short
                     brands_types[i] = brand_type
@@ -340,7 +355,6 @@ class DataFetcher:
 
                     brand_found_db = brands_dict.get(brands_full[i])
                     
-
                     if (brand_found_db and brand_found_db != brand_short):
                         self.update_db_brand(brands_full[i], brand_short)
                     elif (not brand_found_db):
@@ -355,14 +369,13 @@ class DataFetcher:
                 counter += 1
                 curr_prod_index += 1
 
+    def insert_db_brand(self, brand_full: str, brand_short: str):
+        b = Brand(brand_full=brand_full, brand_display=brand_short)
+        b.save()
 
     def update_db_brand(self, brand_full: str, brand_short: str):
         b = Brand.objects.filter(brand_full=brand_full).first()
         b.brand_display = brand_short
-        b.save()
-
-    def insert_db_brand(self, brand_full: str, brand_short: str):
-        b = Brand(brand_full=brand_full, brand_display=brand_short)
         b.save()
 
     # Get Client AFM
@@ -395,3 +408,4 @@ class DataFetcher:
                 word = word.replace(']', '')
                 index = int(word)
                 return index
+            

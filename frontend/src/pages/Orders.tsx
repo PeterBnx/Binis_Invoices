@@ -24,7 +24,6 @@ function Orders() {
 const [isLoading, setIsLoading] = useState(false);
 
 const onOrderClick = (id: string): void => {
-    // Start loading
     setIsLoading(true);
 
     fetch(`http://localhost:8000/binis_invoices/orders/${id}`)
