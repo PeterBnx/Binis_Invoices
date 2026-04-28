@@ -1,5 +1,3 @@
-from playwright.sync_api import sync_playwright
-from django.http import StreamingHttpResponse
 from time import sleep, time
 import json
 from .models import Brand
@@ -13,8 +11,8 @@ invoice_type_dict = {
 class InvoiceMaker:
     def __init__(self):
         self.unregistered_products = []
-
-        
+        self.playwright = None
+        self.browser = None
 
     def make_invoice(self, order_data, invoice_type):
         products = order_data["products"]
@@ -27,8 +25,11 @@ class InvoiceMaker:
         
         shared_instance = Shared()
         self.update_db_brands(updated_brands)
-        with sync_playwright() as p:
-            self.browser = p.chromium.launch(headless=True)                
+
+        try:
+            from playwright.sync_api import sync_playwright
+            self.playwright = sync_playwright().start()
+            self.browser = self.playwright.chromium.launch(headless=True)
             page = self.browser.new_page()
             page.goto("https://live.livecis.gr/live/")
 
@@ -130,7 +131,18 @@ class InvoiceMaker:
             page.locator('#MainContent_Button5').click()
             page.screenshot(path="/app/shared_data/invoice.png", full_page=True)
             yield f"data: {json.dumps({'type': 'FINISHED'})}\n\n"
-            self.browser.close()
+
+            while True:
+                yield f"data: {json.dumps({'type': 'KEEP_ALIVE'})}\n\n"
+                sleep(1)
+
+        except Exception as e:
+            print(f"Error during invoice making: {e}")
+            yield f"data: {json.dumps({'type': 'ERROR', 'message': str(e)})}\n\n"
+        
+        finally:
+            print("Client disconnected or process finished. Closing browser.")
+            self.close_browser()
 
 
     def update_db_brands(self, updated_brands):
@@ -158,4 +170,9 @@ class InvoiceMaker:
                 )
 
     def close_browser(self):
-        self.browser.close()
+        if self.browser:
+            self.browser.close()
+            self.browser = None
+        if self.playwright:
+            self.playwright.stop()
+            self.playwright = None

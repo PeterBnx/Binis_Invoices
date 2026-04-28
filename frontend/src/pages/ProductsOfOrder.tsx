@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 interface Product {
@@ -30,6 +30,9 @@ function ProductsOfOrder() {
     const [extractionStatus, setExtractionStatus] = useState<Record<string, 'pending' | 'loading' | 'completed' | 'skipped'>>({});
     const [isExtracting, setIsExtracting] = useState(false);
     const [updatedBrands, setUpdatedBrands] = useState<Brand[]>([]);
+    const [invoiceType, setInvoiceType] = useState<string>('tda');
+    const [extractionFinished, setExtractionFinished] = useState<boolean>(false);
+    const eventSourceRef = useRef<EventSource | null>(null);
 
     const groupedData = useMemo(() => {
         return productsData.reduce((acc: GroupedProducts, product: Product) => {
@@ -128,13 +131,14 @@ function ProductsOfOrder() {
                     "order_number": orderData.orderNumber,
                     "shipping_tax": shippingTax,
                     "updated_brands": updatedBrands,
+                    "invoice_type": invoiceType,
                  }),
             });
             
             const { session_id } = await response.json();
-            const source = new EventSource(`http://localhost:8000/binis_invoices/extract_invoice/${session_id}`);
+            eventSourceRef.current = new EventSource(`http://localhost:8000/binis_invoices/extract_invoice/${session_id}`);
 
-            source.onmessage = (event) => {
+            eventSourceRef.current.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 
                 if (data.code) {
@@ -146,14 +150,13 @@ function ProductsOfOrder() {
                 }
 
                 if (data.type === 'FINISHED') {
-                    source.close();
-                    setIsExtracting(false);
+                    setIsExtracting(true);
+                    setExtractionFinished(true);
                 }
             };
 
-            source.onerror = () => {
-                source.close();
-                setIsExtracting(false);
+            eventSourceRef.current.onerror = () => {
+                onCloseWindow();
             };
 
         } catch (err) {
@@ -162,6 +165,15 @@ function ProductsOfOrder() {
         }
     };
     
+    const onCloseWindow = () => {
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+        }
+        setShowInvoiceWarning(false);
+        setExtractionFinished(false);
+        setIsExtracting(false);
+    }
+
 return (
     <main className="px-8 max-w-[1600px] mx-auto pb-24">
         {/* Header Section */}
@@ -322,12 +334,22 @@ return (
                         </div>
                     </div>
 
-                    {/* Bottom Note */}
-                    <div className="flex items-center gap-3 bg-on-surface/5 p-4 rounded-xl">
-                        <span className="material-symbols-outlined text-on-surface-variant text-lg">info</span>
-                        <p className="text-[11px] text-on-surface-variant leading-tight">
-                            Η διαδικασία είναι αυτοματοποιημένη. Παρακαλώ μην ανανεώσετε τη σελίδα μέχρι να ολοκληρωθεί η λήψη του στιγμιότυπου.
-                        </p>
+                    {/* Bottom Note & Action */}
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-3 bg-on-surface/5 p-4 rounded-xl">
+                            <span className="material-symbols-outlined text-on-surface-variant text-lg">info</span>
+                            <p className="text-[11px] text-on-surface-variant leading-tight flex-1">
+                                Η διαδικασία είναι αυτοματοποιημένη. Παρακαλώ μην ανανεώσετε τη σελίδα μέχρι να ολοκληρωθεί η λήψη του στιγμιότυπου.
+                            </p>
+                            
+                            {/* The Close Button */}
+                            { extractionFinished && <button 
+                                onClick={() => onCloseWindow()}
+                                className="px-4 py-2 border border-error text-xs font-bold uppercase tracking-wider text-on-surface cursor-pointer hover:bg-on-surface/10 rounded-lg transition-colors"
+                            >
+                                κλεισιμο
+                            </button>}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -340,14 +362,16 @@ return (
                 <div className="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">Items</p>
+                            <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">ειδη</p>
                             <p className="text-2xl font-black text-on-surface">
                                 {Object.values(groupedData).flat().length.toLocaleString()}
                             </p>
                         </div>
                         <div>
-                            <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">Mismatches</p>
-                            <p className="text-2xl font-black text-rose-600">04</p>
+                            <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">λειπουν</p>
+                            <p className=" text-2xl font-black text-rose-600">
+                                {productsData.filter(p => !p.isRegistered).length}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -365,29 +389,43 @@ return (
                     </div>
 
                     <div>
-                    <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">
-                        εξοδα αποστολης
-                    </p>
-                    {/* Changed <p> to <div> to allow the child <div> */}
-                    <div className="flex items-center gap-1 text-sm font-medium text-on-surface">
-                        <span>&#8364;</span>
-                        <div 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => {
-                            const text = e.currentTarget.textContent || "0";
-                            let val = parseFloat(text);
-                            
-                            // Validation logic
-                            if (isNaN(val) || val < 0) val = 0;
-                            if (val > 10000) val = 10000;
-                            e.currentTarget.textContent = val.toString();
-                            updateShippingTax(val.toString());
-                        }}
-                        className="inline-block min-w-[4rem] text-center text-sm font-mono font-bold p-1 text-on-surface rounded-md transition-all cursor-text outline-none hover:bg-primary/10 focus:bg-primary/10 focus:ring-1 focus:ring-primary/30 border border-primary"
-                        >
-                        {shippingTax}
+                        <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">
+                            εξοδα αποστολης
+                        </p>
+                        <div className="flex items-center gap-1 text-sm font-medium text-on-surface">
+                            <span>&#8364;</span>
+                            <div 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => {
+                                const text = e.currentTarget.textContent || "0";
+                                let val = parseFloat(text);
+                                if (isNaN(val) || val < 0) val = 0;
+                                if (val > 10000) val = 10000;
+                                e.currentTarget.textContent = val.toString();
+                                updateShippingTax(val.toString());
+                            }}
+                            className="inline-block min-w-[4rem] text-center text-sm font-mono font-bold p-1 text-on-surface rounded-md transition-all cursor-text outline-none hover:bg-primary/10 focus:bg-primary/10 focus:ring-1 focus:ring-primary/30 border border-primary"
+                            >
+                            {shippingTax}
+                            </div>
                         </div>
+                    </div>
+                    <div>
+                    <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">
+                        ΤΥΠΟΣ ΤΙΜΟΛΟΓΙΟΥ
+                    </p>
+                    <div className="flex items-center gap-1 text-sm font-medium text-on-surface">
+                        <select 
+                        name="invoice_type" 
+                        title="invoice_type"
+                        className="bg-transparent border border-primary rounded-md p-1 outline-none focus:ring-1 focus:ring-primary/30"
+                        value={invoiceType}
+                        onChange={(e) => setInvoiceType(e.target.value)}
+                        >
+                        <option value="tda">ΤΔΑ</option>
+                        <option value="inve">INVE</option>
+                        </select>
                     </div>
                     </div>
                 </div>
@@ -529,7 +567,7 @@ return (
                                             </div>
                                         </td>
 
-                                        {/* Editable Price */}
+                                        {/* Price */}
                                         <td className="px-4 py-3">
                                             <div 
                                                 contentEditable 
