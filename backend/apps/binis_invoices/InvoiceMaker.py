@@ -1,7 +1,7 @@
+import os
 from time import sleep, time
 import json
 from .models import Brand
-from .Shared import Shared
 from .DataFetcher import update_db_brands
 
 class InvoiceMaker:
@@ -9,6 +9,8 @@ class InvoiceMaker:
         self.unregistered_products = []
         self.playwright = None
         self.browser = None
+        self.cis_name = os.environ.get('CIS_NAME')
+        self.cis_passwd = os.environ.get('CIS_PASSWD')
 
     def make_invoice(self, order_data):
         products = order_data["products"]
@@ -19,18 +21,22 @@ class InvoiceMaker:
         prod_quantities = [prod['quantity'] for prod in products]
         prod_prices = [prod['price'] for prod in products]
         
-        shared_instance = Shared()
         update_db_brands(updated_brands)
 
         try:
             from playwright.sync_api import sync_playwright
             self.playwright = sync_playwright().start()
-            self.browser = self.playwright.chromium.launch(headless=True)
+            self.browser = self.playwright.chromium.launch(headless=True, args=[
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage', # 👈 Very important for Docker/Render
+                '--disable-gpu',
+            ])
             page = self.browser.new_page()
             page.goto("https://live.livecis.gr/live/")
 
-            page.fill('input#MainContent_txtunm', shared_instance.cis_name)
-            page.fill('input#MainContent_txtPwd', shared_instance.cis_passwd)
+            page.fill('input#MainContent_txtunm', self.cis_name)
+            page.fill('input#MainContent_txtPwd', self.cis_passwd)
             page.click('input[id=MainContent_Button1]')
 
             page.goto('https://live.livecis.gr/live/Document.aspx?action=N&Personaa=&tp=%d0%d9%cb%c7%d3%c5%c9%d3')

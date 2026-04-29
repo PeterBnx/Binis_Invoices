@@ -15,8 +15,10 @@ RUN playwright install chromium
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-
-# 4. Copy project
 COPY . .
 
 EXPOSE 8000
+
+RUN python manage.py collectstatic --noinput
+
+CMD ["sh", "-c", "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:10000"]

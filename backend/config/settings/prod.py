@@ -11,9 +11,8 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=env('DATABASE_URL'),
-        conn_max_age=600,  # Keeps connections alive for 10 minutes (performance boost)
-        ssl_require=True    # Forces encrypted connection to the DB
+        default=f"sqlite:///{os.path.join(BASE_DIR, 'db.sqlite3')}",
+        conn_max_age=600
     )
 }
 

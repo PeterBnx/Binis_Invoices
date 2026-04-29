@@ -1,13 +1,13 @@
 from .Product import Product
 from .Order import Order
 from .models import Brand
-from .Shared import Shared
 from requests import Session
 from bs4 import BeautifulSoup
 from re import compile
 from lxml import etree
 import pandas as pd
 import io
+import os
 
 
 class DataFetcher:
@@ -21,11 +21,10 @@ class DataFetcher:
         self.all_cis_registered_products = []
         self.emp_orders = []
 
-        shared = Shared()
-        self.emp_name = shared.emp_name
-        self.emp_passwd = shared.emp_passwd 
-        self.cis_name = shared.cis_name
-        self.cis_passwd = shared.cis_passwd
+        self.emp_name = os.environ.get('EMP_NAME')
+        self.emp_passwd = os.environ.get('EMP_PASSWD')
+        self.cis_name = os.environ.get('CIS_NAME')
+        self.cis_passwd = os.environ.get('CIS_PASSWD')
 
         self.emp_orders = []
         self.emp_payload = {
