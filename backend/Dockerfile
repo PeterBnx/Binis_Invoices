@@ -21,4 +21,4 @@ EXPOSE 8000
 
 RUN python manage.py collectstatic --noinput
 
-CMD ["sh", "-c", "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:10000"]
+CMD ["sh", "-c", "python manage.py migrate && python create_admin.py && gunicorn config.wsgi:application --bind 0.0.0.0:10000"]
