@@ -21,7 +21,15 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_SECURE = True
 
-CSRF_TRUSTED_ORIGINS = ["https://binis-invoices.vercel.app"]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://binis-invoices-.*\.vercel\.app$",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://binis-invoices.vercel.app",
+    "https://binis-invoices-7eiimmwpj-peter-bnx-s-projects.vercel.app"
+]
+
 
 DATABASES = {
     'default': dj_database_url.config(
