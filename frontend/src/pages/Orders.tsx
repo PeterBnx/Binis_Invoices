@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import OrderRow from "../components/OrderRow";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 interface Order {
   id: string;
   client: string;
@@ -16,7 +18,7 @@ function Orders() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:8000/binis_invoices/orders")
+    fetch(`${API_BASE_URL}/binis_invoices/orders`)
       .then((res) => res.json())
       .then((data) => setOrders(data));
   }, [reload]);
@@ -26,7 +28,7 @@ const [isLoading, setIsLoading] = useState(false);
 const onOrderClick = (id: string): void => {
     setIsLoading(true);
 
-    fetch(`http://localhost:8000/binis_invoices/orders/${id}`)
+    fetch(`${API_BASE_URL}/binis_invoices/orders/${id}`)
       .then(res => {
           if (!res.ok) throw new Error("Failed to fetch");
           return res.json();

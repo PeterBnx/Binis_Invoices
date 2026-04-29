@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 interface Product {
   quantity: number;
   code: string;
@@ -118,7 +120,7 @@ function ProductsOfOrder() {
         setShowInvoiceWarning(false);
         setIsRegisteringProducts(true);
         try {
-            const response = await fetch('http://localhost:8000/binis_invoices/store_register_data', {
+            const response = await fetch(`${API_BASE_URL}/binis_invoices/store_register_data`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -129,7 +131,7 @@ function ProductsOfOrder() {
             });
             
             const { session_id } = await response.json();
-            eventSourceRef.current = new EventSource(`http://localhost:8000/binis_invoices/register_products/${session_id}`);
+            eventSourceRef.current = new EventSource(`${API_BASE_URL}/binis_invoices/register_products/${session_id}`);
 
             eventSourceRef.current.onmessage = (event) => {
                 const data = JSON.parse(event.data);
@@ -179,7 +181,7 @@ function ProductsOfOrder() {
         setShowInvoiceWarning(false);
         
         try {
-            const response = await fetch('http://localhost:8000/binis_invoices/store_extraction_data', {
+            const response = await fetch(`${API_BASE_URL}/binis_invoices/store_extraction_data`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -193,7 +195,7 @@ function ProductsOfOrder() {
             });
             
             const { session_id } = await response.json();
-            eventSourceRef.current = new EventSource(`http://localhost:8000/binis_invoices/extract_invoice/${session_id}`);
+            eventSourceRef.current = new EventSource(`${API_BASE_URL}/binis_invoices/extract_invoice/${session_id}`);
 
             eventSourceRef.current.onmessage = (event) => {
                 const data = JSON.parse(event.data);

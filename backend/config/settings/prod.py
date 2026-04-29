@@ -11,7 +11,17 @@ ALLOWED_HOSTS = [
 ]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-CSRF_TRUSTED_ORIGINS = ['https://binis-invoices.onrender.com']
+CORS_ALLOWED_ORIGINS = [
+    "https://binis-invoices.vercel.app",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
+
+CSRF_TRUSTED_ORIGINS = ["https://binis-invoices.vercel.app"]
 
 DATABASES = {
     'default': dj_database_url.config(
