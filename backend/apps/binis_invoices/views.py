@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .DataFetcher import DataFetcher
 from .InvoiceMaker import InvoiceMaker
+from .ProductsRegister import ProductsRegister
 
 def get_orders(request):
     orders_data_fetcher = DataFetcher()
@@ -54,5 +55,19 @@ def extract_invoice(request, session_id):
         return StreamingHttpResponse("data: {\"error\": \"Expired\"}\n\n", content_type='text/event-stream')
 
     invoice_maker = InvoiceMaker()
-    invoice_maker.make_invoice(data, 'tda')
-    return StreamingHttpResponse(invoice_maker.make_invoice(data, 'tda'), content_type='text/event-stream')
+    return StreamingHttpResponse(invoice_maker.make_invoice(data), content_type='text/event-stream')
+
+@api_view(['POST'])
+def store_register_data(request):
+    session_id = str(uuid.uuid4())
+    # Store the products data in cache for 10 minutes
+    cache.set(f"extract_{session_id}", request.data, 600)
+    return Response({"session_id": session_id})
+
+def register_products(request, session_id):
+    data = cache.get(f"extract_{session_id}")
+    if not data:
+        return StreamingHttpResponse("data: {\"error\": \"Expired\"}\n\n", content_type='text/event-stream')
+
+    products_register = ProductsRegister()
+    return StreamingHttpResponse(products_register.register(data), content_type='text/event-stream')

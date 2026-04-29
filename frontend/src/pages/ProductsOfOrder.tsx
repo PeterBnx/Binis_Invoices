@@ -29,9 +29,12 @@ function ProductsOfOrder() {
     const [productsNotRegistered, setProductsNotRegistered] = useState<Product[]>([]);
     const [extractionStatus, setExtractionStatus] = useState<Record<string, 'pending' | 'loading' | 'completed' | 'skipped'>>({});
     const [isExtracting, setIsExtracting] = useState(false);
+    const [isRegisteringProducts, setIsRegisteringProducts] = useState(false);
+    const [registerStatus, setRegisterStatus] = useState<Record<string, 'pending' | 'loading' | 'completed' | 'skipped'>>({});
     const [updatedBrands, setUpdatedBrands] = useState<Brand[]>([]);
-    const [invoiceType, setInvoiceType] = useState<string>('tda');
     const [extractionFinished, setExtractionFinished] = useState<boolean>(false);
+    const [registeringFinished, setRegisteringFinished] = useState<boolean>(false);
+    const [productsToRegister, setProductsToRegister] = useState<Product[]>([]);
     const eventSourceRef = useRef<EventSource | null>(null);
 
     const groupedData = useMemo(() => {
@@ -41,6 +44,10 @@ function ProductsOfOrder() {
             acc[brand].push(product);
             return acc;
         }, {});
+    }, [productsData]);
+
+    const productsToUse = useMemo(() => {
+        return productsData.filter((p) => p.quantity > 0);
     }, [productsData]);
 
     const updateQuantity = (productCode: string, amount: number, isDirectSet: boolean = false) => {
@@ -96,17 +103,64 @@ function ProductsOfOrder() {
         }
     };
 
-    const log = () => {
-        console.log(updatedBrands);
-    }
-
     const updateShippingTax = (val: string) => {
-        setShippingTax(val)
+        setShippingTax(val);
     }
 
-    const onRegisterProducts = () => {
+    const onRegisterProducts = async() => {
+        const missingProducts = productsData.filter(p => !p.isRegistered);
+        if (missingProducts.length === 0) {
+            console.log(`Missing  ${missingProducts.length}  products`)
+            alert("Όλα τα είδη είναι καταχωρημένα.")
+            return;
+        }
+        setProductsToRegister(missingProducts);
         setShowInvoiceWarning(false);
-        log()
+        setIsRegisteringProducts(true);
+        try {
+            const response = await fetch('http://localhost:8000/binis_invoices/store_register_data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    "products": missingProducts,
+                    "order_number": orderData.orderNumber,
+                    "updated_brands": updatedBrands,
+                 }),
+            });
+            
+            const { session_id } = await response.json();
+            eventSourceRef.current = new EventSource(`http://localhost:8000/binis_invoices/register_products/${session_id}`);
+
+            eventSourceRef.current.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.code) {
+                    setRegisterStatus(prev => ({
+                        ...prev,
+                        [data.code]: data.type === 'START' ? 'loading' : 
+                                    data.type === 'COMPLETE' ? 'completed' : 'skipped'
+                    }));
+
+                    setProductsData(prev => prev.map(product =>
+                        product.code === data.code 
+                        ? { ...product, isRegistered: data.type === 'COMPLETE' } 
+                        : product
+                    ));
+                }
+
+                if (data.type === 'FINISHED') {
+                    setRegisteringFinished(true);
+                }
+            };
+
+            eventSourceRef.current.onerror = () => {
+                onCloseRegisteringWindow();
+            };
+
+        } catch (err) {
+            console.error("Failed to initiate product registering", err);
+            setIsRegisteringProducts(false);
+        }
     }
 
     const onExtractInvoiceClick = async(checkProducts: boolean) => {
@@ -116,22 +170,25 @@ function ProductsOfOrder() {
             setShowInvoiceWarning(true);
             return;
         }
+        if (productsToUse.length === 0) {
+            alert("Δεν υπάρχουν προϊόντα για εξαγωγή. Ελέγξτε τις ποσότητες για κάθε είδος.");
+            return;
+        }
 
         setIsExtracting(true);
         setShowInvoiceWarning(false);
         
         try {
-            const response = await fetch('http://localhost:8000/binis_invoices/store_data', {
+            const response = await fetch('http://localhost:8000/binis_invoices/store_extraction_data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    "products": productsData,
+                    "products": productsToUse,
                     "client_name": orderData.clientName,
                     "client_afm": orderData.clientVAT,
                     "order_number": orderData.orderNumber,
                     "shipping_tax": shippingTax,
                     "updated_brands": updatedBrands,
-                    "invoice_type": invoiceType,
                  }),
             });
             
@@ -156,7 +213,7 @@ function ProductsOfOrder() {
             };
 
             eventSourceRef.current.onerror = () => {
-                onCloseWindow();
+                onCloseExtractingWindow();
             };
 
         } catch (err) {
@@ -165,13 +222,26 @@ function ProductsOfOrder() {
         }
     };
     
-    const onCloseWindow = () => {
+    const onCloseExtractingWindow = () => {
         if (eventSourceRef.current) {
             eventSourceRef.current.close();
         }
         setShowInvoiceWarning(false);
         setExtractionFinished(false);
         setIsExtracting(false);
+    }
+
+    const onCloseRegisteringWindow = () => {
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+        }
+        setShowInvoiceWarning(false);
+        setRegisteringFinished(false);
+        setIsRegisteringProducts(false);
+    }
+
+    function onVisitLiveCis(): void {
+       window.open('https://live.livecis.gr/live/Documents.aspx?tp=%u03a0%u03a9%u039b%u0397%u03a3%u0395%u0399%u03a3', '_blank', 'noreferrer');
     }
 
 return (
@@ -262,24 +332,34 @@ return (
         </div>
         )}
 
-       {isExtracting && (
+        {isRegisteringProducts && (
             <div className="overscroll-none fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
                 <div className="relative bg-surface-container-high border border-outline-variant/30 p-8 rounded-2xl max-w-lg w-full shadow-2xl animate-in fade-in zoom-in duration-300">
                     
                     {/* Header with Global Spinner */}
                     <div className="flex items-center gap-5 mb-8">
                         <div className="relative">
-                            <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                            {
+                                !registeringFinished ? (
+                                    <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div> 
+                                ) : (
+                                    <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center animate-in zoom-in duration-300">
+                                        <span className="material-symbols-outlined text-white text-3xl">check</span>
+                                    </div>
+                                    )
+                            }
                         </div>
                         <div>
-                            <h3 className="text-2xl font-black text-on-surface tracking-tight">Εξαγωγή Τιμολογίου</h3>
-                            <p className="text-sm text-on-surface-variant flex items-center gap-2">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                                </span>
-                                Παρακαλώ περιμένετε...
-                            </p>
+                            <h3 className="text-2xl font-black text-on-surface tracking-tight">Καταχώρηση Ειδών</h3>
+                            {!registeringFinished &&
+                                <p className="text-sm text-on-surface-variant flex items-center gap-2">
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                    </span>
+                                    Παρακαλώ περιμένετε...
+                                </p>
+                            }
                         </div>
                     </div>
 
@@ -287,7 +367,108 @@ return (
                     <div className="mb-8 border border-outline-variant/10 rounded-xl bg-black/40 shadow-inner">
                         <div className="max-h-[350px] overflow-y-auto p-2 custom-scrollbar">
                             <div className="space-y-1">
-                                {productsData.map((product) => {
+                                {productsToRegister.filter((p) => !p.isRegistered).map((product) => {
+                                    const status = registerStatus[product.code] || 'pending';
+                                    return (
+                                        <div 
+                                            key={product.code} 
+                                            className={`flex items-center justify-between p-3 rounded-lg transition-all ${
+                                                status === 'loading' ? 'bg-primary/5 ring-1 ring-primary/20' : ''
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                {/* Dynamic Status Icon */}
+                                                <div className="flex items-center justify-center w-6">
+                                                    {status === 'completed' && <span className="material-symbols-outlined text-emerald-400 scale-110">check_circle</span>}
+                                                    {status === 'pending' && <span className="w-2 h-2 bg-on-surface/20 rounded-full"></span>}
+                                                    {status === 'loading' && <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>}
+                                                </div>
+                                                
+                                                <div className="flex flex-col">
+                                                    <span className={`text-sm font-mono font-bold tracking-wider ${
+                                                        status === 'completed' ? 'text-emerald-400' : 
+                                                        status === 'skipped' ? 'text-rose-400' : 'text-on-surface/40'
+                                                    }`}>
+                                                        {product.code}
+                                                    </span>
+                                                    <span className="text-[10px] text-on-surface-variant/60 truncate max-w-[200px]">
+                                                        {product.description || "Προϊόν"}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Badge Status */}
+                                            <div className="flex flex-col items-end">
+                                                <span className={`text-[10px] font-black uppercase tracking-tighter px-2 py-1 rounded ${
+                                                    status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' : 
+                                                    status === 'skipped' ? 'bg-rose-500/10 text-rose-500' : 'text-on-surface/20'
+                                                }`}>
+                                                    {status === 'completed' ? 'Done' : status === 'skipped' ? 'Skipped' : 'Waiting'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Note & Action */}
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-3 bg-on-surface/5 p-4 rounded-xl">
+                            <span className="material-symbols-outlined text-on-surface-variant text-lg">info</span>
+                            <p className="text-[11px] text-on-surface-variant leading-tight flex-1">
+                                Η διαδικασία είναι αυτοματοποιημένη. Παρακαλώ μην ανανεώσετε τη σελίδα μέχρι να ολοκληρωθεί η λήψη του στιγμιότυπου.
+                            </p>
+                            
+                            {/* The Close Button */}
+                            { registeringFinished && <button 
+                                onClick={() => onCloseRegisteringWindow()}
+                                className="px-4 py-2 border border-primary text-xs font-bold uppercase tracking-wider text-on-surface cursor-pointer hover:bg-on-surface/10 rounded-lg transition-colors"
+                            >
+                                κλεισιμο
+                            </button>}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
+       {isExtracting && (
+            <div className="overscroll-none fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+                <div className="relative bg-surface-container-high border border-outline-variant/30 p-8 rounded-2xl max-w-lg w-full shadow-2xl animate-in fade-in zoom-in duration-300">
+                    
+                    {/* Header with Global Spinner */}
+                    <div className="flex items-center gap-5 mb-8">
+                            {
+                                !extractionFinished ? (
+                                    <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div> 
+                                ) : (
+                                    <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center animate-in zoom-in duration-300">
+                                        <span className="material-symbols-outlined text-white text-3xl">check</span>
+                                    </div>
+                                    )
+                            }
+                        <div>
+                            <h3 className="text-2xl font-black text-on-surface tracking-tight">Εξαγωγή Τιμολογίου</h3>
+                            {
+                                !extractionFinished &&
+                                <p className="text-sm text-on-surface-variant flex items-center gap-2">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                </span>
+                                Παρακαλώ περιμένετε...
+                                </p>
+                            }
+                        </div>
+                    </div>
+
+                    {/* Live Progress List */}
+                    <div className="mb-8 border border-outline-variant/10 rounded-xl bg-black/40 shadow-inner">
+                        <div className="max-h-[350px] overflow-y-auto p-2 custom-scrollbar">
+                            <div className="space-y-1">
+                                {productsToUse.map((product) => {
                                     const status = extractionStatus[product.code] || 'pending';
                                     return (
                                         <div 
@@ -338,13 +519,26 @@ return (
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center gap-3 bg-on-surface/5 p-4 rounded-xl">
                             <span className="material-symbols-outlined text-on-surface-variant text-lg">info</span>
-                            <p className="text-[11px] text-on-surface-variant leading-tight flex-1">
-                                Η διαδικασία είναι αυτοματοποιημένη. Παρακαλώ μην ανανεώσετε τη σελίδα μέχρι να ολοκληρωθεί η λήψη του στιγμιότυπου.
-                            </p>
+                                <p className="text-[11px] text-on-surface-variant leading-tight flex-1">
+                                {extractionFinished ? (
+                                    <>
+                                    Η Εξαγωγή Τιμολογίου Ολοκληρώθηκε. Πατήστε{' '}
+                                    <button 
+                                        onClick={onVisitLiveCis} // Or whatever function starts registration
+                                        className="text-primary font-bold hover:underline cursor-pointer transition-colors"
+                                    >
+                                        εδώ
+                                    </button>{' '}
+                                    για να προχωρήσετε σε καταχώρηση.
+                                    </>
+                                ) : (
+                                    `Η διαδικασία είναι αυτοματοποιημένη. Παρακαλώ μην ανανεώσετε τη σελίδα μέχρι να ολοκληρωθεί η λήψη του στιγμιότυπου.`
+                                )}
+                                </p>
                             
                             {/* The Close Button */}
                             { extractionFinished && <button 
-                                onClick={() => onCloseWindow()}
+                                onClick={() => onCloseExtractingWindow()}
                                 className="px-4 py-2 border border-error text-xs font-bold uppercase tracking-wider text-on-surface cursor-pointer hover:bg-on-surface/10 rounded-lg transition-colors"
                             >
                                 κλεισιμο
@@ -410,23 +604,6 @@ return (
                             {shippingTax}
                             </div>
                         </div>
-                    </div>
-                    <div>
-                    <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">
-                        ΤΥΠΟΣ ΤΙΜΟΛΟΓΙΟΥ
-                    </p>
-                    <div className="flex items-center gap-1 text-sm font-medium text-on-surface">
-                        <select 
-                        name="invoice_type" 
-                        title="invoice_type"
-                        className="bg-transparent border border-primary rounded-md p-1 outline-none focus:ring-1 focus:ring-primary/30"
-                        value={invoiceType}
-                        onChange={(e) => setInvoiceType(e.target.value)}
-                        >
-                        <option value="tda">ΤΔΑ</option>
-                        <option value="inve">INVE</option>
-                        </select>
-                    </div>
                     </div>
                 </div>
             </aside>

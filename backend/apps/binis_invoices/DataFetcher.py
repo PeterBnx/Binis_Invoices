@@ -201,7 +201,11 @@ class DataFetcher:
         self.prod_quantities = []
         quantities = self.soup.find_all('input', attrs={"name": "q_inviati[]", "id": "q_inviati[]"})
         for quantity in quantities:
-            self.prod_quantities.append(int(quantity.get('value').replace(' ', '')))
+            quantity_str = quantity.get('value').replace(' ', '')
+            if len(quantity_str) > 0:
+                self.prod_quantities.append(int(quantity_str))
+            else:
+                self.prod_quantities.append(0)
 
 
 
@@ -294,11 +298,12 @@ class DataFetcher:
     # Formatting products descriptions
     def fetch_products_descriptions(self):
         types_dict = {
-            "watch" : "Ρολόι",
-            "eye" : "Γυαλιά",
-            "jew" : "Κόσμημα",
-            "sunglass" : "Γυαλιά",
-            "glass": "Γυαλιά"
+            "WATCH" : "Ρολόι",
+            "EYE" : "Γυαλιά",
+            "JEW" : "Κόσμημα",
+            "SUNGLASS" : "Γυαλιά",
+            "GLASS": "Γυαλιά",
+            "GOGGLES": "Γυαλιά"
         }
         all_brands = Brand.objects.all().values()
 
@@ -323,16 +328,15 @@ class DataFetcher:
 
             # format the type
             # if a word from types dict is found in brand full name, append the according brand type
+            is_watch = True
             for type in types_dict.keys():
-                is_watch = True
                 if type in brand_name_full:
                     brands_types.append(types_dict[type])
                     is_watch = False
                     break
-                if (is_watch):
-                    brands_types.append('Ρολόι')
-                    break
-
+            if (is_watch):
+                brands_types.append('Ρολόι')
+                
         curr_prod_index = 0
         for i, brand_num in enumerate(self.brands_number_of_products):
             counter = 0
@@ -409,3 +413,25 @@ class DataFetcher:
                 index = int(word)
                 return index
             
+def update_db_brands(updated_brands):
+    all_brands = Brand.objects.all()
+    brands_dict = {b.brand_full: b for b in all_brands}
+
+    for brand_data in updated_brands:
+        full_name = brand_data.get("brandFull")
+        short_name = brand_data.get("brandShort")
+
+        if not full_name or not short_name:
+            continue
+
+        existing_brand = brands_dict.get(full_name)
+
+        if existing_brand:
+            if existing_brand.brand_display != short_name:
+                existing_brand.brand_display = short_name
+                existing_brand.save() 
+        else:
+            Brand.objects.create(
+                brand_full=full_name,
+                brand_display=short_name
+            )

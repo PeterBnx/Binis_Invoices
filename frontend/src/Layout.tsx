@@ -11,23 +11,6 @@ function Layout() {
               Binis Invoices
             </span>
           </div>
-          <div className="flex items-center gap-6">
-            <div className="relative lg:block">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
-                search
-              </span>
-              <input
-                className="bg-surface-container-lowest border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-1 focus:ring-primary-container w-64 transition-all"
-                placeholder="Search orders..."
-                type="text"
-              />
-            </div>
-            <div className="flex items-center gap-4">
-              <button className="p-2 text-gray-400 hover:bg-white/5 transition-all duration-300 rounded-lg active:scale-95">
-                <span className="material-symbols-outlined">settings</span>
-              </button>
-            </div>
-          </div>
         </div>
         <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[#B32C3A]/20 to-transparent" />
       </nav>

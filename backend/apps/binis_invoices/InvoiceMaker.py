@@ -2,11 +2,7 @@ from time import sleep, time
 import json
 from .models import Brand
 from .Shared import Shared
-
-invoice_type_dict = {
-    'tda' : 'ΤΔΑ',
-    'inve' : 'INVE'
-}
+from .DataFetcher import update_db_brands
 
 class InvoiceMaker:
     def __init__(self):
@@ -14,7 +10,7 @@ class InvoiceMaker:
         self.playwright = None
         self.browser = None
 
-    def make_invoice(self, order_data, invoice_type):
+    def make_invoice(self, order_data):
         products = order_data["products"]
         client_afm = order_data["client_afm"]
         shipping_tax = order_data["shipping_tax"]
@@ -24,7 +20,7 @@ class InvoiceMaker:
         prod_prices = [prod['price'] for prod in products]
         
         shared_instance = Shared()
-        self.update_db_brands(updated_brands)
+        update_db_brands(updated_brands)
 
         try:
             from playwright.sync_api import sync_playwright
@@ -40,9 +36,7 @@ class InvoiceMaker:
             page.goto('https://live.livecis.gr/live/Document.aspx?action=N&Personaa=&tp=%d0%d9%cb%c7%d3%c5%c9%d3')
 
             #Select invoice type
-            page.locator('#MainContent_TabContainer1_TabPanel1_DocType').select_option(invoice_type_dict[invoice_type])
-            if (invoice_type == 'inve'):
-                page.locator('#MainContent_TabContainer1_TabPanel1_MDVatExe').select_option('14')
+            page.locator('#MainContent_TabContainer1_TabPanel1_DocType').select_option('ΠΑΡ')
 
             #Select client
             page.locator('#MainContent_TabContainer1_TabPanel1_Button6').click()
@@ -129,11 +123,15 @@ class InvoiceMaker:
             page.locator('#MainContent_BtLineIN').click()
             sleep(1)
             page.locator('#MainContent_Button5').click()
+            sleep(1)
+            page.locator('#MainContent_InButon').click()
+            sleep(1)
             page.screenshot(path="/app/shared_data/invoice.png", full_page=True)
             yield f"data: {json.dumps({'type': 'FINISHED'})}\n\n"
 
             while True:
                 yield f"data: {json.dumps({'type': 'KEEP_ALIVE'})}\n\n"
+                print("keep alive")
                 sleep(1)
 
         except Exception as e:
@@ -143,31 +141,6 @@ class InvoiceMaker:
         finally:
             print("Client disconnected or process finished. Closing browser.")
             self.close_browser()
-
-
-    def update_db_brands(self, updated_brands):
-        all_brands = Brand.objects.all()
-        brands_dict = {b.brand_full: b for b in all_brands}
-
-        for brand_data in updated_brands:
-            full_name = brand_data.get("brandFull")
-            short_name = brand_data.get("brandShort")
-
-            if not full_name or not short_name:
-                continue
-
-            existing_brand = brands_dict.get(full_name)
-
-            if existing_brand:
-                if existing_brand.brand_display != short_name:
-                    existing_brand.brand_display = short_name
-                    existing_brand.save() 
-            else:
-                # 3. Insert if it doesn't exist
-                Brand.objects.create(
-                    brand_full=full_name,
-                    brand_display=short_name
-                )
 
     def close_browser(self):
         if self.browser:
