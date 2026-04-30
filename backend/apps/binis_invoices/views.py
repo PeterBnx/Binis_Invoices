@@ -10,6 +10,13 @@ from rest_framework.response import Response
 from .DataFetcher import DataFetcher
 from .InvoiceMaker import InvoiceMaker
 from .ProductsRegister import ProductsRegister
+from rest_framework.renderers import BaseRenderer
+
+class SSERenderer(BaseRenderer):
+    media_type = 'text/event-stream'
+    format = 'txt'
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data
 
 def get_token_from_request(request):
     """
@@ -67,7 +74,7 @@ def store_extraction_data(request):
     return Response({"session_id": session_id})
 
 @api_view(['GET'])
-@renderer_classes([StaticHTMLRenderer])
+@renderer_classes([SSERenderer])
 @permission_classes([AllowAny])
 def extract_invoice(request, session_id):
     token_key = get_token_from_request(request)
@@ -89,7 +96,7 @@ def store_register_data(request):
     return Response({"session_id": session_id})
 
 @api_view(['GET'])
-@renderer_classes([StaticHTMLRenderer])
+@renderer_classes([SSERenderer])
 @permission_classes([AllowAny])
 def register_products(request, session_id):
     token_key = get_token_from_request(request)
