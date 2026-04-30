@@ -16,6 +16,15 @@ class SSERenderer(BaseRenderer):
     media_type = 'text/event-stream'
     format = 'txt'
     def render(self, data, accepted_media_type=None, renderer_context=None):
+        if renderer_context:
+            response = renderer_context.get('response')
+            if response:
+                # Ensure CORS headers are set for streaming responses
+                request = renderer_context.get('request')
+                origin = request.META.get('HTTP_ORIGIN')
+                if origin:
+                    response['Access-Control-Allow-Origin'] = origin
+                    response['Access-Control-Allow-Credentials'] = 'true'
         return data
 
 def get_token_from_request(request):
@@ -110,11 +119,18 @@ def register_products(request, session_id):
     products_register = ProductsRegister()
     return StreamingHttpResponse(products_register.register(data), content_type='text/event-stream')
 
-@api_view(['POST'])
+@api_view(['POST', 'OPTIONS'])
 @permission_classes([AllowAny])
 def login_view(request):
+    if request.method == 'OPTIONS':
+        return Response(status=200)
+    
     username = request.data.get('username')
     password = request.data.get('password')
+    
+    if not username or not password:
+        return Response({'error': 'Username and password are required'}, status=400)
+    
     user = authenticate(username=username, password=password)
     
     if user:

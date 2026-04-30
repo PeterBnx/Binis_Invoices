@@ -11,12 +11,16 @@ ALLOWED_HOSTS = [
 ]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://binis-invoices-.*\.vercel\.app$",
+    r"^https://binis-invoices\.vercel\.app$",
+]
+
 CORS_ALLOWED_ORIGINS = [
     "https://binis-invoices.vercel.app",
     "https://binis-invoices-9yvum0rin-peter-bnx-s-projects.vercel.app",
 ]
-
-CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_HEADERS = [
     "accept",
@@ -32,10 +36,6 @@ SESSION_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_SECURE = True
-
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://binis-invoices-.*\.vercel\.app$",
-]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://binis-invoices.vercel.app",
