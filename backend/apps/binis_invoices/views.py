@@ -1,12 +1,27 @@
 import uuid
 from django.core.cache import cache
-from django.http import JsonResponse, StreamingHttpResponse
-from rest_framework.decorators import api_view
+from django.http import HttpResponseForbidden, JsonResponse, StreamingHttpResponse
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from .DataFetcher import DataFetcher
 from .InvoiceMaker import InvoiceMaker
 from .ProductsRegister import ProductsRegister
 
+def get_token_from_request(request):
+    """
+    Helper to extract token from either the Authorization header 
+    or the 'token' query parameter (for EventSource).
+    """
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Token '):
+        return auth_header.split(' ')[1]
+    return request.GET.get('token')
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_orders(request):
     orders_data_fetcher = DataFetcher()
     orders_data_fetcher.fetch_all_orders()
@@ -18,6 +33,8 @@ def get_orders(request):
         })
     return JsonResponse(data, safe=False)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_products_of_order(request, order_number):
     data_fetcher = DataFetcher()
     data_fetcher.fetch_order_products_data(order_number)
@@ -41,15 +58,20 @@ def get_products_of_order(request, order_number):
     }
     return JsonResponse(data, safe=False)
 
-
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def store_extraction_data(request):
     session_id = str(uuid.uuid4())
-    # Store the products data in cache for 10 minutes
     cache.set(f"extract_{session_id}", request.data, 600)
     return Response({"session_id": session_id})
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def extract_invoice(request, session_id):
+    token_key = get_token_from_request(request)
+    if not token_key or not Token.objects.filter(key=token_key).exists():
+        return HttpResponseForbidden("Invalid Token")
+    
     data = cache.get(f"extract_{session_id}")
     if not data:
         return StreamingHttpResponse("data: {\"error\": \"Expired\"}\n\n", content_type='text/event-stream')
@@ -58,16 +80,34 @@ def extract_invoice(request, session_id):
     return StreamingHttpResponse(invoice_maker.make_invoice(data), content_type='text/event-stream')
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def store_register_data(request):
     session_id = str(uuid.uuid4())
-    # Store the products data in cache for 10 minutes
-    cache.set(f"extract_{session_id}", request.data, 600)
+    cache.set(f"register_{session_id}", request.data, 600)
     return Response({"session_id": session_id})
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def register_products(request, session_id):
-    data = cache.get(f"extract_{session_id}")
+    token_key = get_token_from_request(request)
+    if not token_key or not Token.objects.filter(key=token_key).exists():
+        return HttpResponseForbidden("Invalid Token")
+
+    data = cache.get(f"register_{session_id}")
     if not data:
         return StreamingHttpResponse("data: {\"error\": \"Expired\"}\n\n", content_type='text/event-stream')
 
     products_register = ProductsRegister()
     return StreamingHttpResponse(products_register.register(data), content_type='text/event-stream')
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_view(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    user = authenticate(username=username, password=password)
+    
+    if user:
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({'token': token.key})
+    return Response({'error': 'Λανθασμένα στοιχεία σύνδεσης'}, status=400)

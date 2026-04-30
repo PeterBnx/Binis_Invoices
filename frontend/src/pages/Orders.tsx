@@ -18,32 +18,38 @@ function Orders() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/binis_invoices/orders`)
+    const token = localStorage.getItem("token");
+    fetch(`${API_BASE_URL}/binis_invoices/orders`, {
+      headers: {
+        "Authorization": `Token ${token}`
+      }
+    })
       .then((res) => res.json())
       .then((data) => setOrders(data));
   }, [reload]);
 
-const [isLoading, setIsLoading] = useState(false);
 
-const onOrderClick = (id: string): void => {
-    setIsLoading(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-    fetch(`${API_BASE_URL}/binis_invoices/orders/${id}`)
-      .then(res => {
-          if (!res.ok) throw new Error("Failed to fetch");
-          return res.json();
-      })
-      .then(data => {
-          navigate('/products_of_order', { state: { orderData: data } });
-      })
-      .catch(err => {
-          console.error(err);
-          alert("Σφάλμα κατά τη φόρτωση της παραγγελίας.");
-      })
-      .finally(() => {
-          setIsLoading(false);
-      });
-  };
+  const onOrderClick = (id: string): void => {
+      setIsLoading(true);
+
+      fetch(`${API_BASE_URL}/binis_invoices/orders/${id}`)
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to fetch");
+            return res.json();
+        })
+        .then(data => {
+            navigate('/products_of_order', { state: { orderData: data } });
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Σφάλμα κατά τη φόρτωση της παραγγελίας.");
+        })
+        .finally(() => {
+            setIsLoading(false);
+        });
+    };
 
   const onReloadClick = () => {
     setOrders(null);

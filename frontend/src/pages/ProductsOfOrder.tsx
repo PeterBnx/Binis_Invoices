@@ -23,6 +23,7 @@ type Brand = {
 }
 
 function ProductsOfOrder() {
+    const token = localStorage.getItem("token");
     const location = useLocation();
     const orderData = useMemo(() => location.state?.orderData || [], [location.state?.orderData]);    
     const [productsData, setProductsData] = useState<Product[]>(orderData.products);
@@ -122,7 +123,10 @@ function ProductsOfOrder() {
         try {
             const response = await fetch(`${API_BASE_URL}/binis_invoices/store_register_data`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Token ${token}`
+                },
                 body: JSON.stringify({ 
                     "products": missingProducts,
                     "order_number": orderData.orderNumber,
@@ -131,7 +135,7 @@ function ProductsOfOrder() {
             });
             
             const { session_id } = await response.json();
-            eventSourceRef.current = new EventSource(`${API_BASE_URL}/binis_invoices/register_products/${session_id}`);
+            eventSourceRef.current = new EventSource(`${API_BASE_URL}/binis_invoices/register_products/${session_id}?token=${token}`);
 
             eventSourceRef.current.onmessage = (event) => {
                 const data = JSON.parse(event.data);
@@ -183,7 +187,10 @@ function ProductsOfOrder() {
         try {
             const response = await fetch(`${API_BASE_URL}/binis_invoices/store_extraction_data`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${token}`
+                },
                 body: JSON.stringify({ 
                     "products": productsToUse,
                     "client_name": orderData.clientName,
@@ -195,7 +202,7 @@ function ProductsOfOrder() {
             });
             
             const { session_id } = await response.json();
-            eventSourceRef.current = new EventSource(`${API_BASE_URL}/binis_invoices/extract_invoice/${session_id}`);
+            eventSourceRef.current = new EventSource(`${API_BASE_URL}/binis_invoices/extract_invoice/${session_id}?token=${token}`);
 
             eventSourceRef.current.onmessage = (event) => {
                 const data = JSON.parse(event.data);
