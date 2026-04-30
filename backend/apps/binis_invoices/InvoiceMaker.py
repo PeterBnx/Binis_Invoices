@@ -21,7 +21,7 @@ def timeout(seconds):
     try:
         yield
     finally:
-        signal.alarm(0)  # Disable alarm
+        signal.alarm(0)
 
 class InvoiceMaker:
     def __init__(self):

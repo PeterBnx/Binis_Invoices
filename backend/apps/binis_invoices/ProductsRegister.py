@@ -1,7 +1,26 @@
-from time import sleep
-from .DataFetcher import update_db_brands
-import json
 import os
+from time import sleep
+import json
+import signal
+from contextlib import contextmanager
+from .DataFetcher import update_db_brands
+
+class TimeoutException(Exception):
+    pass
+
+@contextmanager
+def timeout(seconds):
+    """Context manager for timeouts"""
+    def handler(signum, frame):
+        raise TimeoutException("Operation timed out")
+    
+    # Set the signal handler and alarm
+    signal.signal(signal.SIGALRM, handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
 
 class ProductsRegister:
     def __init__(self):
@@ -26,8 +45,9 @@ class ProductsRegister:
             self.browser = self.playwright.chromium.launch(headless=True, args=[
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage', # 👈 Very important for Docker/Render
+                '--disable-dev-shm-usage',
                 '--disable-gpu',
+                '--single-process'
             ])
             page = self.browser.new_page()
             page.goto("https://live.livecis.gr/live/")
@@ -50,10 +70,6 @@ class ProductsRegister:
                     yield f"data: {json.dumps({'type': 'COMPLETE', 'code': prod_codes[i]})}\n\n"
             yield f"data: {json.dumps({'type': 'FINISHED'})}\n\n"
 
-            while True:
-                yield f"data: {json.dumps({'type': 'KEEP_ALIVE'})}\n\n"
-                sleep(1)
-
         except Exception as e:
             print(f"Error during invoice making: {e}")
             yield f"data: {json.dumps({'type': 'ERROR', 'message': str(e)})}\n\n"
@@ -63,9 +79,25 @@ class ProductsRegister:
             self.close_browser()
 
     def close_browser(self):
-        if self.browser:
-            self.browser.close()
-            self.browser = None
-        if self.playwright:
-            self.playwright.stop()
+        """Close browser with timeout handling to prevent hanging"""
+        try:
+            if self.browser:
+                try:
+                    # Set a timeout for browser close operation
+                    self.browser.close()
+                except TimeoutException:
+                    print("Browser close timed out, forcing shutdown")
+                except Exception as e:
+                    print(f"Error closing browser: {e}")
+                finally:
+                    self.browser = None
+        except Exception as e:
+            print(f"Error in close_browser: {e}")
+        
+        try:
+            if self.playwright:
+                self.playwright.stop()
+        except Exception as e:
+            print(f"Error stopping playwright: {e}")
+        finally:
             self.playwright = None

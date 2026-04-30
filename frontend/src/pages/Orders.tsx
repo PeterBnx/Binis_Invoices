@@ -108,7 +108,7 @@ function Orders() {
           </table>
 
           {/* Body */}
-          <div className="h-[500px] overflow-auto">
+          <div className="h-[520px] overflow-auto">
             <table className="w-full table-auto border-separate border-spacing-0">
               <tbody className="divide-y divide-outline-variant/10">
                 {!orders ? (
