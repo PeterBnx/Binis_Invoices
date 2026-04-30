@@ -16,6 +16,8 @@ CORS_ALLOWED_ORIGINS = [
     "https://binis-invoices-9yvum0rin-peter-bnx-s-projects.vercel.app",
 ]
 
+CORS_ALLOW_ALL_ORIGINS = True
+
 CORS_ALLOW_HEADERS = [
     "accept",
     "authorization",
@@ -37,7 +39,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 
 CSRF_TRUSTED_ORIGINS = [
     "https://binis-invoices.vercel.app",
-    "https://binis-invoices-7eiimmwpj-peter-bnx-s-projects.vercel.app"
+    "https://binis-invoices-j8fyxq5dh-peter-bnx-s-projects.vercel.app",
 ]
 
 
