@@ -3,29 +3,12 @@ from django.core.cache import cache
 from django.http import HttpResponseForbidden, JsonResponse, StreamingHttpResponse
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view, permission_classes, renderer_classes
-from rest_framework.renderers import StaticHTMLRenderer
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from .DataFetcher import DataFetcher
 from .InvoiceMaker import InvoiceMaker
 from .ProductsRegister import ProductsRegister
-from rest_framework.renderers import BaseRenderer
-
-class SSERenderer(BaseRenderer):
-    media_type = 'text/event-stream'
-    format = 'txt'
-    def render(self, data, accepted_media_type=None, renderer_context=None):
-        if renderer_context:
-            response = renderer_context.get('response')
-            if response:
-                # Ensure CORS headers are set for streaming responses
-                request = renderer_context.get('request')
-                origin = request.META.get('HTTP_ORIGIN')
-                if origin:
-                    response['Access-Control-Allow-Origin'] = origin
-                    response['Access-Control-Allow-Credentials'] = 'true'
-        return data
 
 def get_token_from_request(request):
     """
@@ -36,6 +19,18 @@ def get_token_from_request(request):
     if auth_header and auth_header.startswith('Token '):
         return auth_header.split(' ')[1]
     return request.GET.get('token')
+
+def add_cors_headers(response, request):
+    """
+    Add CORS headers to a response for cross-origin requests.
+    """
+    origin = request.META.get('HTTP_ORIGIN')
+    if origin:
+        response['Access-Control-Allow-Origin'] = origin
+        response['Access-Control-Allow-Credentials'] = 'true'
+        response['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response['Access-Control-Allow-Headers'] = 'accept, authorization, content-type, user-agent, x-csrftoken, x-requested-with'
+    return response
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -83,7 +78,6 @@ def store_extraction_data(request):
     return Response({"session_id": session_id})
 
 @api_view(['GET'])
-@renderer_classes([SSERenderer])
 @permission_classes([AllowAny])
 def extract_invoice(request, session_id):
     token_key = get_token_from_request(request)
@@ -92,10 +86,12 @@ def extract_invoice(request, session_id):
     
     data = cache.get(f"extract_{session_id}")
     if not data:
-        return StreamingHttpResponse("data: {\"error\": \"Expired\"}\n\n", content_type='text/event-stream')
+        response = StreamingHttpResponse("data: {\"error\": \"Expired\"}\n\n", content_type='text/event-stream')
+        return add_cors_headers(response, request)
 
     invoice_maker = InvoiceMaker()
-    return StreamingHttpResponse(invoice_maker.make_invoice(data), content_type='text/event-stream')
+    response = StreamingHttpResponse(invoice_maker.make_invoice(data), content_type='text/event-stream')
+    return add_cors_headers(response, request)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -105,7 +101,6 @@ def store_register_data(request):
     return Response({"session_id": session_id})
 
 @api_view(['GET'])
-@renderer_classes([SSERenderer])
 @permission_classes([AllowAny])
 def register_products(request, session_id):
     token_key = get_token_from_request(request)
@@ -114,10 +109,12 @@ def register_products(request, session_id):
 
     data = cache.get(f"register_{session_id}")
     if not data:
-        return StreamingHttpResponse("data: {\"error\": \"Expired\"}\n\n", content_type='text/event-stream')
+        response = StreamingHttpResponse("data: {\"error\": \"Expired\"}\n\n", content_type='text/event-stream')
+        return add_cors_headers(response, request)
 
     products_register = ProductsRegister()
-    return StreamingHttpResponse(products_register.register(data), content_type='text/event-stream')
+    response = StreamingHttpResponse(products_register.register(data), content_type='text/event-stream')
+    return add_cors_headers(response, request)
 
 @api_view(['POST', 'OPTIONS'])
 @permission_classes([AllowAny])
