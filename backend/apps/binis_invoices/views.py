@@ -77,9 +77,11 @@ def store_extraction_data(request):
     cache.set(f"extract_{session_id}", request.data, 600)
     return Response({"session_id": session_id})
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
 def extract_invoice(request, session_id):
+    """
+    Streaming endpoint for invoice creation.
+    Regular Django view (not @api_view) to avoid DRF content negotiation.
+    """
     token_key = get_token_from_request(request)
     if not token_key or not Token.objects.filter(key=token_key).exists():
         return HttpResponseForbidden("Invalid Token")
@@ -100,9 +102,11 @@ def store_register_data(request):
     cache.set(f"register_{session_id}", request.data, 600)
     return Response({"session_id": session_id})
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
 def register_products(request, session_id):
+    """
+    Streaming endpoint for product registration.
+    Regular Django view (not @api_view) to avoid DRF content negotiation.
+    """
     token_key = get_token_from_request(request)
     if not token_key or not Token.objects.filter(key=token_key).exists():
         return HttpResponseForbidden("Invalid Token")
