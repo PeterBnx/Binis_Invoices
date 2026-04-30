@@ -5,15 +5,17 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app/
 
-# Just install the python package first
-RUN pip install playwright
-
-# Use Playwright's own dependency manager to install system libs + browser
-RUN playwright install-deps chromium
-RUN playwright install chromium
+# Install only necessary system libs for lxml and psycopg
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libxml2-dev libxslt-dev gcc python3-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Entrypoint for migrations
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 COPY . .
 
@@ -21,4 +23,5 @@ EXPOSE 8000
 
 RUN python manage.py collectstatic --noinput
 
-CMD ["sh", "-c", "python manage.py migrate && python create_admin.py && gunicorn config.wsgi:application --bind 0.0.0.0:10000"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:10000"]

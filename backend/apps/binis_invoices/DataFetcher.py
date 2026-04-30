@@ -129,13 +129,18 @@ class DataFetcher:
 
 
     def fetch_all_orders(self):
+        print(f"DEBUG: Attempting login for user: {self.emp_name}")
         self.reset_session()
-        self.session.post(
+        login_res = self.session.post(
             self.emp_login_url,
             data=self.emp_payload
         )
 
+        print(f"DEBUG: Login POST status: {login_res.status_code}")
+        print(f"DEBUG: Current URL after login: {login_res.url}")
+
         response = self.session.get(self.emp_orders_page_url)
+        print(f"DEBUG: Orders page status: {response.status_code}")
         soup = BeautifulSoup(response.text, "html.parser")
 
         order_pattern = compile(r"ordini3\.php\?ordine=\d+")
@@ -144,13 +149,14 @@ class DataFetcher:
         price_pattern = compile(r'€\s?\d{1,3}(?:,\d{3})*(?:\.\d{2})?')
 
         order_codes = soup.find_all("a", href=order_pattern)
+        print(f"DEBUG: Found {len(order_codes)} order elements in HTML")
         client_elements = soup.findAll('a', href=client_pattern) 
         date_elements = soup.findAll('td', {'valign': 'TOP', 'align': 'center'}, string=date_pattern) 
         price_elements = soup.findAll('td', {'valign': 'TOP', 'align': 'RIGHT'}, string=price_pattern)
 
-        if (len(order_codes) == 0): 
-            self.creds_correct = False 
-            return False 
+        if len(order_codes) == 0:
+            print(f"DEBUG: HTML Snippet: {response.text[:500]}")
+            return False
         
         for i in range(len(order_codes)): 
             order_codes[i] = order_codes[i].get_text(strip=True) 
