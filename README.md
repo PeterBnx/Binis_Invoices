@@ -117,9 +117,7 @@ Binis Invoices is a web application designed to streamline invoice creation and 
    ```
 
 4. **Access the application**
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:8000
-   - Admin panel: http://localhost:8000/admin
+   https://binis-invoices.vercel.app/
 
 ### Option 2: Local Development
 
