@@ -1,8 +1,27 @@
 import os
 from time import sleep, time
 import json
+import signal
+from contextlib import contextmanager
 from .models import Brand
 from .DataFetcher import update_db_brands
+
+class TimeoutException(Exception):
+    pass
+
+@contextmanager
+def timeout(seconds):
+    """Context manager for timeouts"""
+    def handler(signum, frame):
+        raise TimeoutException("Operation timed out")
+    
+    # Set the signal handler and alarm
+    signal.signal(signal.SIGALRM, handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)  # Disable alarm
 
 class InvoiceMaker:
     def __init__(self):
@@ -38,6 +57,8 @@ class InvoiceMaker:
                 '--single-process'
             ])
             page = self.browser.new_page()
+            page.set_default_timeout(15000)  # 15 second timeout for all page actions
+            page.set_default_navigation_timeout(15000)  # 15 second navigation timeout
             page.goto("https://live.livecis.gr/live/")
 
             page.fill('input#MainContent_txtunm', self.cis_name)
@@ -140,11 +161,6 @@ class InvoiceMaker:
             page.screenshot(path="/app/shared_data/invoice.png", full_page=True)
             yield f"data: {json.dumps({'type': 'FINISHED'})}\n\n"
 
-            while True:
-                yield f"data: {json.dumps({'type': 'KEEP_ALIVE'})}\n\n"
-                print("keep alive")
-                sleep(1)
-
         except Exception as e:
             print(f"Error during invoice making: {e}")
             yield f"data: {json.dumps({'type': 'ERROR', 'message': str(e)})}\n\n"
@@ -154,9 +170,25 @@ class InvoiceMaker:
             self.close_browser()
 
     def close_browser(self):
-        if self.browser:
-            self.browser.close()
-            self.browser = None
-        if self.playwright:
-            self.playwright.stop()
+        """Close browser with timeout handling to prevent hanging"""
+        try:
+            if self.browser:
+                try:
+                    # Set a timeout for browser close operation
+                    self.browser.close()
+                except TimeoutException:
+                    print("Browser close timed out, forcing shutdown")
+                except Exception as e:
+                    print(f"Error closing browser: {e}")
+                finally:
+                    self.browser = None
+        except Exception as e:
+            print(f"Error in close_browser: {e}")
+        
+        try:
+            if self.playwright:
+                self.playwright.stop()
+        except Exception as e:
+            print(f"Error stopping playwright: {e}")
+        finally:
             self.playwright = None

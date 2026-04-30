@@ -30,4 +30,4 @@ RUN python manage.py collectstatic --noinput
 EXPOSE 8000
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:10000"]
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:10000", "--timeout", "120", "--workers", "2", "--threads", "2", "--worker-class", "sync", "--max-requests", "100"]
