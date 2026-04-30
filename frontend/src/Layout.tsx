@@ -36,7 +36,33 @@ function Layout() {
       </main>
 
       {/* --- STATIC FOOTER --- */}
-      {/* Keep your footer as is... */}
+      <footer className="z-30 fixed bottom-0 w-full py-12 border-t border-[#B32C3A]/10 bg-[#0E0E0E]">
+        <div className="flex flex-col md:flex-row justify-between items-center px-12 max-w-7xl mx-auto gap-4">
+          <div className="text-gray-600 font-['Inter'] text-xs uppercase tracking-widest">
+            © developed by petros binis
+          </div>
+          <div className="flex items-center gap-8">
+            <a
+              className="text-gray-600 font-['Inter'] text-xs uppercase tracking-widest hover:text-[#B32C3A] transition-colors"
+              href="#"
+            >
+              Privacy
+            </a>
+            <a
+              className="text-gray-600 font-['Inter'] text-xs uppercase tracking-widest hover:text-[#B32C3A] transition-colors"
+              href="#"
+            >
+              Terms
+            </a>
+            <a
+              className="text-gray-600 font-['Inter'] text-xs uppercase tracking-widest hover:text-[#B32C3A] transition-colors"
+              href="#"
+            >
+              Support
+            </a>
+          </div>
+        </div>
+      </footer>
     </>
   );
 }

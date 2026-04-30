@@ -32,9 +32,16 @@ function Orders() {
   const [isLoading, setIsLoading] = useState(false);
 
   const onOrderClick = (id: string): void => {
+    const token = localStorage.getItem("token");
       setIsLoading(true);
 
-      fetch(`${API_BASE_URL}/binis_invoices/orders/${id}`)
+      fetch(`${API_BASE_URL}/binis_invoices/orders/${id}`, {
+        headers: {
+            "Authorization": `Token ${token}`,
+            "Content-Type": "application/json"
+        }
+      }
+      )
         .then(res => {
             if (!res.ok) throw new Error("Failed to fetch");
             return res.json();
