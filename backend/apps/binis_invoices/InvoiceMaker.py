@@ -29,8 +29,9 @@ class InvoiceMaker:
             self.browser = self.playwright.chromium.launch(headless=True, args=[
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage', # 👈 Very important for Docker/Render
+                '--disable-dev-shm-usage',
                 '--disable-gpu',
+                '--single-process'
             ])
             page = self.browser.new_page()
             page.goto("https://live.livecis.gr/live/")

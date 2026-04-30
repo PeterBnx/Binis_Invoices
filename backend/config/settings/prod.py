@@ -13,6 +13,16 @@ ALLOWED_HOSTS = [
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CORS_ALLOWED_ORIGINS = [
     "https://binis-invoices.vercel.app",
+    "https://binis-invoices-9yvum0rin-peter-bnx-s-projects.vercel.app",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "authorization",
+    "content-type",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
