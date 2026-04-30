@@ -131,10 +131,28 @@ class DataFetcher:
     def fetch_all_orders(self):
         print(f"DEBUG: Attempting login for user: {self.emp_name}")
         self.reset_session()
-        login_res = self.session.post(
-            self.emp_login_url,
-            data=self.emp_payload
-        )
+
+        self.session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://www.emporiorologion.gr/admin/controlloaccesso.php",
+            "Origin": "https://www.emporiorologion.gr"
+        })
+
+        # 2. IMPORTANT: GET the login page first to pick up initial cookies
+        print("DEBUG: Visiting login page to collect cookies...")
+        self.session.get("https://www.emporiorologion.gr/admin/controlloaccesso.php")
+
+        # 3. Now attempt the POST
+        print(f"DEBUG: Attempting login for user: {self.emp_name}")
+        login_res = self.session.post(self.emp_login_url, data=self.emp_payload)
+        print(self.emp_payload)
+        
+        print(f"DEBUG: Login POST status: {login_res.status_code}")
+    
+        # Check if we are still getting a 403
+        if login_res.status_code == 403:
+            print("DEBUG: Still getting 403. The site is likely blocking Render's IP address.")
+            return False
 
         print(f"DEBUG: Login POST status: {login_res.status_code}")
         print(f"DEBUG: Current URL after login: {login_res.url}")
