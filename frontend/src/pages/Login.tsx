@@ -52,7 +52,7 @@ export default function Login() {
             className="w-full p-4 rounded-xl bg-surface text-on-surface border border-outline focus:border-primary outline-none transition-all"
             onChange={e => setPassword(e.target.value)}
           />
-          <button className="w-full bg-primary text-on-primary py-4 rounded-xl font-bold text-lg hover:brightness-110 active:scale-[0.98] transition-all">
+          <button className="w-full cursor-pointer bg-primary text-on-primary py-4 rounded-xl font-bold text-lg hover:brightness-110 active:scale-[0.98] transition-all">
             Είσοδος
           </button>
         </div>

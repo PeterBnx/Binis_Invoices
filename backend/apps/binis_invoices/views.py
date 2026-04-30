@@ -3,7 +3,8 @@ from django.core.cache import cache
 from django.http import HttpResponseForbidden, JsonResponse, StreamingHttpResponse
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, renderer_classes
+from rest_framework.renderers import StaticHTMLRenderer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from .DataFetcher import DataFetcher
@@ -66,6 +67,7 @@ def store_extraction_data(request):
     return Response({"session_id": session_id})
 
 @api_view(['GET'])
+@renderer_classes([StaticHTMLRenderer])
 @permission_classes([AllowAny])
 def extract_invoice(request, session_id):
     token_key = get_token_from_request(request)
@@ -87,6 +89,7 @@ def store_register_data(request):
     return Response({"session_id": session_id})
 
 @api_view(['GET'])
+@renderer_classes([StaticHTMLRenderer])
 @permission_classes([AllowAny])
 def register_products(request, session_id):
     token_key = get_token_from_request(request)
