@@ -20,8 +20,12 @@ class InvoiceMaker:
         prod_codes = [prod['code'] for prod in products]
         prod_quantities = [prod['quantity'] for prod in products]
         prod_prices = [prod['price'] for prod in products]
+        print(prod_codes)
         
-        update_db_brands(updated_brands)
+        try:
+            update_db_brands(updated_brands)
+        except e:
+            print(e)
 
         try:
             from playwright.sync_api import sync_playwright

@@ -12,8 +12,8 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true); // Start loading
-    setError(""); // Clear previous errors
+    setIsLoading(true);
+    setError("");
 
     try {
       const res = await fetch(`${API_BASE_URL}/binis_invoices/login/`, {
@@ -33,7 +33,7 @@ export default function Login() {
     } catch (err) {
       setError("Αποτυχία σύνδεσης στον διακομιστή");
     } finally {
-      setIsLoading(false); // Stop loading regardless of outcome
+      setIsLoading(false);
     }
   };
 
