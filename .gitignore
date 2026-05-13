@@ -1,14 +1,3 @@
-.venv/
-*.pyc
-__pycache__/
-db.sqlite3
-.env
-.vscode/
-static/
-media/
-postgres_data/
-shared_data
-
 # Logs
 logs
 *.log
@@ -20,19 +9,13 @@ lerna-debug.log*
 
 node_modules
 dist
-dist-ssr
+dist-react
+dist-electron
 *.local
+*.pyc
+.env
 
-# Python tooling caches and coverage
-.pytest_cache/
-.mypy_cache/
-.coverage
-coverage.xml
-
-# Environment files
-.env.*
-temp.txt
-Shared.py
+data
 
 # Editor directories and files
 .vscode/*
@@ -44,3 +27,8 @@ Shared.py
 *.njsproj
 *.sln
 *.sw?
+*.vs
+*.venv
+
+#Data files
+*.db

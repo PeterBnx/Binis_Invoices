@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+:root {
+  --bg-dark: oklch(0.1 0.015 211);
+  --bg: oklch(0.15 0.015 211);
+  --bg-light: oklch(0.2 0.015 211);
+  --text: oklch(0.96 0.03 211);
+  --text-muted: oklch(0.76 0.03 211);
+  --highlight: oklch(0.5 0.03 211);
+  --border: oklch(0.4 0.03 211);
+  --border-muted: oklch(0.3 0.03 211);
+  --primary: oklch(0.76 0.1 211);
+  --secondary: oklch(0.76 0.1 31);
+  --danger: oklch(0.7 0.05 30);
+  --warning: oklch(0.7 0.05 100);
+  --success: oklch(0.7 0.05 160);
+  --info: oklch(0.7 0.05 260);
+}
+
+@font-face {
+  font-family: 'Manrope';
+  src: url('../assets/fonts/Manrope-Variable.ttf') format('truetype');
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+html, body, #root {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+               Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  line-height: 1.5;
+  background-color: var(--bg-dark);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+p, li, span, a, button, input, textarea {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.sidebar-item, .main-side-item, .side-bar-icon, .sidebar a {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+button, input, select, textarea {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 400;
+}

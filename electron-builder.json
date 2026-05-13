@@ -1,0 +1,16 @@
+{
+    "appId": "com.PBinis.prepare",
+    "files": ["dist-electron", "dist-react","**/*",
+    "!**/node_modules/@tailwindcss/oxide-wasm32-wasi/**"],
+    "icon": "./src/assets/desktopIcon.png",
+    "mac": {
+        "target": "dmg"
+    },
+    "linux": {
+        "target": "AppImage",
+        "category": "Utility"
+    },
+    "win": {
+        "target": ["portable", "msi"]
+    }
+}
