@@ -9,10 +9,9 @@ from lxml import etree
 import pandas as pd
 import io
 import os
+import pprint
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-print("Hello from Python! Σαββόπουλος")
-sys.stdout.flush()
+# sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 class DataFetcher:
 
@@ -29,10 +28,7 @@ class DataFetcher:
         # self.emp_passwd = os.environ.get('EMP_PASSWD')
         # self.cis_name = os.environ.get('CIS_NAME')
         # self.cis_passwd = os.environ.get('CIS_PASSWD')
-        self.emp_name="Binis"
-        self.emp_passwd="BinisEgnatia53"
-        self.cis_name="MPINIST"
-        self.cis_passwd="999559545"
+
 
         self.emp_orders = []
         self.emp_payload = {

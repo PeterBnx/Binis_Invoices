@@ -29,6 +29,11 @@ declare global {
     get_orders: {
       args: void;
       return: Order[];
+    },
+
+    test: {
+      args: void;
+      return: string;
     }
 
     // DATA FROM DB

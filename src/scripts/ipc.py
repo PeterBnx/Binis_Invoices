@@ -11,7 +11,6 @@ def main():
         data_fetcher.fetch_all_orders()
         order_data = [order.to_dict() for order in data_fetcher.emp_orders]
 
-        # print("[PYTHON] 2: ", [order.client for order in data_fetcher.emp_orders])
 
         payload = {
             "type": "emp_orders",
@@ -26,7 +25,6 @@ def main():
     finally:
         if 'ws' in locals():
             ws.close()
-            print("WebSocket connection closed.")
 
 if __name__ == "__main__":
     main()

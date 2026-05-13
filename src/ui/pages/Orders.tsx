@@ -1,70 +1,45 @@
 import { useEffect, useState } from "react";
-import OrderRow from "../components/OrderRow";
 import type { Order } from "../../electron/types/objects";
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import OrderRow from "../components/OrderRow";
 
 function Orders() {
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [reload, setReload] = useState<boolean>(false);
-
-  // const navigate = useNavigate();
-
-  window.api.receive('socket_message', (message: string) => {
-    console.log(JSON.parse(message).data)
-  })
-
-    window.api.receive('socket_message', (message: string) => {
-    console.log(JSON.parse(message).data)
-  })
-
-    window.api.receive('socket_message', (message: string) => {
-    console.log(JSON.parse(message).data)
-  })
-
-    window.api.receive('socket_message', (message: string) => {
-    console.log(JSON.parse(message).data)
-  })
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    window.api.invoke('get_orders')
-      .then((res) => {
-        console.log(res);
-        return res;
-        })
-      .then((data) => setOrders(data));
+    const unsubscribe = window.api.receive('socket_message', (message: any) => {
+      if (message.type !== "emp_orders") return;
+      console.log('[Orders] Received socket_message:', message);
+      try {
+        const data = typeof message === 'string' ? JSON.parse(message) : message;
+        console.log('[Orders] Parsed data:', data);
+        setOrders(Array.isArray(data.data) ? data.data : []);
+        setIsLoading(false);
+      } catch (e) {
+        console.error('[Orders] Failed to parse message:', e);
+        setOrders([]);
+        setIsLoading(false);
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    console.log('[Orders] Fetching orders...');
+    setIsLoading(true);
+    window.api.invoke('get_orders').catch(e => {
+      console.error('[Orders] Error:', e);
+      setIsLoading(false);
+    });
   }, [reload]);
 
 
-  const [isLoading, setIsLoading] = useState(false);
 
   const onOrderClick = (id: string): void => {
-    id = '';
-    console.log(id);
-      setIsLoading(true);
-    // const token = localStorage.getItem("token");
-    //   setIsLoading(true);
-
-    //   fetch(`${API_BASE_URL}/binis_invoices/orders/${id}`, {
-    //     headers: {
-    //         "Authorization": `Token ${token}`,
-    //         "Content-Type": "application/json"
-    //     }
-    //   }
-    //   )
-    //     .then(res => {
-    //         if (!res.ok) throw new Error("Failed to fetch");
-    //         return res.json();
-    //     })
-    //     .then(data => {
-    //         navigate('/products_of_order', { state: { orderData: data } });
-    //     })
-    //     .catch(err => {
-    //         console.error(err);
-    //         alert("Σφάλμα κατά τη φόρτωση της παραγγελίας.");
-    //     })
-    //     .finally(() => {
-    //         setIsLoading(false);
-    //     });
+      console.log(id);
     };
 
     const onReloadClick = () => {
@@ -73,80 +48,72 @@ function Orders() {
       setReload(!temp);
     }
 
-  return (
-    <main className="max-w-[1600px] mx-auto p-6">
-      <header className="mb-4">
-        <h1 className="text-4xl font-extrabold tracking-tighter text-on-surface">
+return (
+  <main className="h-screen flex flex-col p-8 bg-[var(--bg-dark)] text-[var(--text)] overflow-hidden">
+    <div className="max-w-6xl w-full mx-auto flex flex-col h-full">
+      <header className="mb-8 flex-shrink-0">
+        <h1 className="text-5xl font-bold mb-2 text-[var(--text)]">
           Παραγγελίες
         </h1>
-        <p className="text-on-surface-variant font-light tracking-wide max-w-2xl">
+        <p className="text-lg text-[var(--text-muted)]">
           Επιλέξτε μία από τις παρακάτω παραγγελίες
         </p>
       </header>
 
       {isLoading && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-surface-dark/80 backdrop-blur-md">
-            {/* Simple CSS Spinner */}
-            <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
-            <p className="text-on-surface font-medium animate-pulse tracking-widest uppercase text-xs">
-                Φoρτωση Παραγγελiας...
-            </p>
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center backdrop-blur-sm bg-black/60">
+          <div className="w-16 h-16 border-4 rounded-full animate-spin mb-4 border-[var(--border-muted)] border-t-[var(--primary)]"></div>
+          <p className="font-semibold tracking-wide animate-pulse text-[var(--text)]">
+            Φόρτωση Παραγγελιών...
+          </p>
         </div>
-        )}
-
-      <section className="bg-surface-container-low rounded-xl border border-outline-variant/10 shadow-xl">
-        <div className="min-w-[900px] ">
-          <table className="w-full table-auto border-separate border-spacing-0">
-            <thead className="bg-surface-container-low">
+      )}
+      <section className="flex-1 min-h-0 flex flex-col rounded-lg shadow-2xl bg-[var(--bg)] border border-[var(--border-muted)] overflow-hidden">
+        
+        <div className="overflow-y-auto h-full">
+          <table className="w-full">
+            <thead className="sticky top-0 z-10 bg-[var(--highlight)]">
               <tr>
-                <th className="w-1/5 px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant border-b border-outline-variant/20 text-left">
-                  Παραγγελια
-                </th>
-                <th className="w-1/4 px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant border-b border-outline-variant/20 text-left">
-                  Πελατης
-                </th>
-                <th className="w-1/4 px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant border-b border-outline-variant/20 text-left">
-                  Ημερομηνια
-                </th>
-                <th className="w-1/6 px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant border-b border-outline-variant/20 text-left">
-                  Τιμη
-                </th>
-                <th className="w-[80px] border-b border-outline-variant/20" />
+                {["παραγγελια", "πελατης", "ημερομηνια", "τιμη"].map((head) => (
+                  <th key={head} className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text)]">
+                    {head}
+                  </th>
+                ))}
+                <th className="px-6 py-4 w-12"></th>
               </tr>
             </thead>
-          </table>
-
-          {/* Body */}
-          <div className="h-[520px] overflow-auto">
-            <table className="w-full table-auto border-separate border-spacing-0">
-              <tbody className="divide-y divide-outline-variant/10">
-                {!orders ? (
-                  /* Loading State */
-                  <tr><td colSpan={5} className="py-10 text-center">Φόρτωση...</td></tr>
-                ) : orders.length === 0 ? (
-                  /* Empty State */
-                  <tr>
-                    <td colSpan={5} className="py-10 text-center text-on-surface-variant">
-                      <p>Δεν βρέθηκαν παραγγελίες.</p>
-                  <button className="px-4 py-2 m-4 cursor-pointer border border-gray-300 rounded hover:bg-gray-100"
-                  onClick={() => onReloadClick()}>
-                    Επαναφόρτωση
+            <tbody className="border-t border-[var(--border-muted)]">
+              {!orders ? (
+                <tr>
+                  <td colSpan={5} className="py-16 text-center text-[var(--text-muted)]">
+                    Φόρτωση δεδομένων...
+                  </td>
+                </tr>
+              ) : orders.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                      <p className="text-lg text-[var(--text-muted)]">Δεν βρέθηκαν παραγγελίες</p>
+                      <button 
+                        onClick={onReloadClick}
+                        className="px-6 py-2 font-medium rounded-lg transition-colors duration-200 shadow-lg bg-[var(--primary)] text-[var(--bg-dark)] hover:opacity-90"
+                      >
+                        Επαναφόρτωση
                       </button>
-                    </td>
-                  </tr>
-                ) : (
-                  /* Data State */
-                  orders.map((order) => (
-                    <OrderRow order_id={order.id} key={order.id} {...order} onClick={() => onOrderClick(order.id)} />
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                orders.map((order) => (
+                  <OrderRow order_id={order.id} key={order.id} {...order} onClick={() => onOrderClick(order.id)} />
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
-    </main>
-  );
+    </div>
+  </main>
+);
 }
-
 export default Orders;

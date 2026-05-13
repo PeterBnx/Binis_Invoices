@@ -29,9 +29,9 @@ export function startServer(): boolean {
 
       ws.on("message", (msg: Buffer) => {
         try {
-          const decodedMsg = msg.toString('utf8'); 
+          const decodedMsg = msg.toString('utf-8'); 
           const messageData = JSON.parse(decodedMsg);
-          // console.log("[socketConnection.ts] Received structured data:", messageData);
+          console.log("[socketConnection.ts] Received structured data:", messageData);
 
           getMainWindow()?.webContents.send("socket_message", messageData);
         } catch (e) {

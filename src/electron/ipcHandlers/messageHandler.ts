@@ -10,6 +10,13 @@ export function register(win: BrowserWindow) {
         
         return { status: "fetching_started" };
     });
+
+    ipcMain.handle('test', async (_event, args) => {
+        console.log('[IPC] test handler called');
+        startServer();
+        runPythonScript('test.py');
+        return { status: "test_started" };
+    });
 }
 
 export default register;

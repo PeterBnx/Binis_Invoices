@@ -50,7 +50,7 @@
     "globals": "^16.0.0",
     "npm-run-all": "^4.1.5",
     "postcss": "^8.5.6",
-    "react-icons": "^5.5.0",
+    "react-icons": "^5.6.0",
     "react-router-dom": "^7.6.2",
     "rimraf": "^6.0.1",
     "tailwindcss": "^4.1.11",
