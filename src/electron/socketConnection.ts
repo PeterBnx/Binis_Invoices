@@ -66,9 +66,9 @@ export function stopServer(): boolean {
 }
 
 
-export function runPythonScript(scriptName: string) {
+export function runPythonScript(scriptName: string, args: string = "") {
   const scriptPath = getScriptsPath() + scriptName;
-  const pythonProcess = spawn('python', ['-u', scriptPath], {
+  const pythonProcess = spawn('python', ['-u', scriptPath, args], {
     env: {...process.env, PYTHONIOENCODING: 'utf-8'}
   });
 

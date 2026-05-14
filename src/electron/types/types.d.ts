@@ -1,4 +1,4 @@
-import { Order} from "./objects.ts";
+import { Order, OrderData } from "./objects.ts";
 
 export {};
 
@@ -31,41 +31,9 @@ declare global {
       return: Order[];
     },
 
-    test: {
-      args: void;
-      return: string;
-    }
-
-    // DATA FROM DB
-    get_all_employees_of_team_from_db: {
-      args: number;
-      return: Employee[];
-    },
-    get_all_teams_from_db: {
-      args: void;
-      return: Team[];
-    },
-    get_all_employees_from_db: {
-      args: void;
-      return: Employee[];
-    },
-    get_all_schedule_settings_from_db: {
-      args: void;
-      return: ScheduleSetting[];
-    },
-
-    // DATA TO DB
-    update_db_employee: {
-      args: Employee;
-      return: boolean;
-    },
-    insert_db_employee: {
-      args: Employee;
-      return: [boolean, number | bigint];
-    },
-    delete_db_employee: {
-      args: number | bigint;
-      return: boolean;
+    get_order_data: {
+      args: string;
+      return: OrderData;
     }
 
     // WEBSOCKET CONNECTION

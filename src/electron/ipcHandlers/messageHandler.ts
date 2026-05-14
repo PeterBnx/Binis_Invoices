@@ -11,11 +11,11 @@ export function register(win: BrowserWindow) {
         return { status: "fetching_started" };
     });
 
-    ipcMain.handle('test', async (_event, args) => {
-        console.log('[IPC] test handler called');
+    ipcMain.handle('get_order_data', async (_event, args) => {
         startServer();
-        runPythonScript('test.py');
-        return { status: "test_started" };
+        runPythonScript('ipc.py', args); 
+        
+        return { status: "fetching_started" };
     });
 }
 

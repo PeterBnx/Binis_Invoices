@@ -1,5 +1,4 @@
-import json
-import sys
+from pathlib import Path
 from Product import Product
 from Order import Order
 from requests import Session
@@ -9,13 +8,19 @@ from lxml import etree
 import pandas as pd
 import io
 import os
-import pprint
-
-# sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+from dotenv import load_dotenv
+from DB import DB
+import sys
 
 class DataFetcher:
-
     def __init__(self):
+        script_dir = Path(__file__).resolve().parent
+        project_root = script_dir.parent.parent
+        env_path = project_root / '.env'
+        load_dotenv(dotenv_path=env_path)
+
+        self.db = DB()
+
         self.emp_login_url = f"https://www.emporiorologion.gr/admin/controlloaccesso.php"
         self.emp_orders_page_url = f"https://www.emporiorologion.gr/admin/ordini2.php?statoordine=-1&nome=&ordine=&cliente=&referenza=&ups=&datachiusura=&Payment=0&annullato=0&nazione_ordine=-1&ordine_pronto=2&warning=2&marca=-1&primo_ordine=2&pagato=2&API=2&chiavi_in_mano=2&vendita_privata=2&datadal=&dataal="
         self.cis_login_url = f"https://live.livecis.gr/live/default.aspx"
@@ -24,10 +29,10 @@ class DataFetcher:
         self.all_cis_registered_products = []
         self.emp_orders = []
 
-        # self.emp_name = os.environ.get('EMP_NAME')
-        # self.emp_passwd = os.environ.get('EMP_PASSWD')
-        # self.cis_name = os.environ.get('CIS_NAME')
-        # self.cis_passwd = os.environ.get('CIS_PASSWD')
+        self.emp_name = os.environ.get('EMP_NAME')
+        self.emp_passwd = os.environ.get('EMP_PASSWD')
+        self.cis_name = os.environ.get('CIS_NAME')
+        self.cis_passwd = os.environ.get('CIS_PASSWD')
 
 
         self.emp_orders = []
@@ -324,9 +329,10 @@ class DataFetcher:
             "GLASS": "Γυαλιά",
             "GOGGLES": "Γυαλιά"
         }
-        all_brands = Brand.objects.all().values()
 
-        brands_dict = {brand['brand_full']: brand['brand_display'] for brand in all_brands}
+        all_brands = self.db.get_all_db_brands()
+        self.db.db_connection.commit()
+        brands_dict = {brand[0]: brand[1] for brand in all_brands}
         brands_elements = self.soup.find_all(class_ = 'Stile11')
 
         self.fetch_brands_number_of_products()
@@ -379,9 +385,9 @@ class DataFetcher:
                     brand_found_db = brands_dict.get(brands_full[i])
                     
                     if (brand_found_db and brand_found_db != brand_short):
-                        self.update_db_brand(brands_full[i], brand_short)
+                        self.db.update_db_brand(brands_full[i], brand_short)
                     elif (not brand_found_db):
-                        self.insert_db_brand(brands_full[i], brand_short)
+                        self.db.insert_db_brand(brands_full[i], brand_short)
 
                     brands_dict.update({brands_full[i] : brand_short})                        
 
@@ -391,15 +397,6 @@ class DataFetcher:
                 self.prod_brands_short.append(brands_short[i])
                 counter += 1
                 curr_prod_index += 1
-
-    def insert_db_brand(self, brand_full: str, brand_short: str):
-        b = Brand(brand_full=brand_full, brand_display=brand_short)
-        b.save()
-
-    def update_db_brand(self, brand_full: str, brand_short: str):
-        b = Brand.objects.filter(brand_full=brand_full).first()
-        b.brand_display = brand_short
-        b.save()
 
     # Get Client AFM
     def fetch_client_afm(self):
@@ -431,34 +428,13 @@ class DataFetcher:
                 word = word.replace(']', '')
                 index = int(word)
                 return index
-            
-def update_db_brands(updated_brands):
-    all_brands = Brand.objects.all()
-    brands_dict = {b.brand_full: b for b in all_brands}
-
-    for brand_data in updated_brands:
-        full_name = brand_data.get("brandFull")
-        short_name = brand_data.get("brandShort")
-
-        if not full_name or not short_name:
-            continue
-
-        existing_brand = brands_dict.get(full_name)
-
-        if existing_brand:
-            if existing_brand.brand_display != short_name:
-                existing_brand.brand_display = short_name
-                existing_brand.save() 
-        else:
-            Brand.objects.create(
-                brand_full=full_name,
-                brand_display=short_name
-            )
 
 
 def main():
     data_fetcher = DataFetcher()
-    data_fetcher.fetch_all_orders()
+    data_fetcher.fetch_order_products_data(sys.argv[1])
+    data_fetcher.db_connection.close()
+    print(data_fetcher.client_name)
 
 if __name__=="__main__":
     main()

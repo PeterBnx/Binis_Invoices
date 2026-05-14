@@ -8,9 +8,9 @@ function App() {
     <Router>
         <Routes>
           {/* <Route path="/" element={<Login />} /> */}
-          <Route path="/" element={<Orders />}/>
+          <Route path="/" element={<ProductsOfOrder />}/>
           <Route path="/ordersPage" element={<Orders />} />
-          <Route path="/productsOfOrderPage" element={<ProductsOfOrder />} />
+          <Route path="/productsOfOrderPage/:id" element={<ProductsOfOrder />} />
         </Routes>
     </Router>
   );

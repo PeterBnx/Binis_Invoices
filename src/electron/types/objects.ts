@@ -14,3 +14,11 @@ export type Product = {
   brandFull: string;
   brandShort: string;
 }
+
+export type OrderData = {
+  orderNumber: string;
+  products: Product[];
+  shippingTax: string;
+  clientVAT: string;
+  clientName: string;
+}
