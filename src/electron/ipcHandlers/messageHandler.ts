@@ -6,7 +6,7 @@ import { runPythonScript, startServer } from "../socketConnection.js";
 export function register(win: BrowserWindow) {
     ipcMain.handle('get_orders', async (_event, args) => {
         startServer();
-        runPythonScript('ipc.py'); 
+        runPythonScript('ipc.py', ['get_orders']); 
         
         return { status: "fetching_started" };
     });
@@ -16,6 +16,18 @@ export function register(win: BrowserWindow) {
         runPythonScript('ipc.py', args); 
         
         return { status: "fetching_started" };
+    });
+
+    ipcMain.handle('register_products', async (_event, args) => {
+        startServer();
+        runPythonScript('ipc.py', ['register_products'], args);
+        return { status: "registering_started" };
+    });
+
+    ipcMain.handle('extract_invoice', async (_event, args) => {
+        startServer();
+        runPythonScript('ipc.py', ['extract_invoice'], args);
+        return { status: "invoice_extraction_started" };
     });
 }
 

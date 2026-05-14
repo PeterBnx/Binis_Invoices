@@ -66,14 +66,18 @@ export function stopServer(): boolean {
 }
 
 
-export function runPythonScript(scriptName: string, args: string = "") {
+export function runPythonScript(scriptName: string, args: string[] = [], data = null) {
   const scriptPath = getScriptsPath() + scriptName;
-  const pythonProcess = spawn('python', ['-u', scriptPath, args], {
+  const pythonProcess = spawn('python', ['-u', scriptPath, ...args], {
     env: {...process.env, PYTHONIOENCODING: 'utf-8'}
   });
 
-  pythonProcess.stdout.setEncoding('utf8'); 
-
+  pythonProcess.stdout.setEncoding('utf8');
+  if (data) {
+    pythonProcess.stdin.write(JSON.stringify(data));
+    pythonProcess.stdin.end();
+  }
+  
   console.log(`[PYTHON] Running: ${scriptPath}`);
 
   pythonProcess.stdout.on('data', (data) => {

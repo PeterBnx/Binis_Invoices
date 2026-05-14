@@ -34,12 +34,13 @@ class DB:
     def update_db_brand(self, brand_full: str, brand_short: str):
         self.cursor.execute(f'''
             UPDATE BRAND SET Brand_Short = ? WHERE Brand_Full = ?
-        ''', brand_short, brand_full)
+        ''', (brand_short, brand_full))
         self.db_connection.commit()
 
     def update_db_brands(self, updated_brands):
         all_brands = self.get_all_db_brands()
-        brands_dict = {b.brand_full: b for b in all_brands}
+        # all_brands returns tuples: (brand_full, brand_short)
+        brands_dict = {b[0]: b for b in all_brands}
 
         for brand_data in updated_brands:
             full_name = brand_data.get("brandFull")

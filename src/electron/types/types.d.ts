@@ -32,8 +32,18 @@ declare global {
     },
 
     get_order_data: {
-      args: string;
+      args: string[];
       return: OrderData;
+    }
+
+    register_products: {
+      args: string;
+      return: string;
+    }
+
+    extract_invoice: {
+      args: string;
+      return: string;
     }
 
     // WEBSOCKET CONNECTION
