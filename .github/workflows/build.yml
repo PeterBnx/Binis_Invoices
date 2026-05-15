@@ -12,16 +12,26 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Install Node.js
+      - name: Setup Node.js (Version 22)
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 22
 
-      - name: Install Dependencies
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Build Python Binary (PyInstaller)
+        run: |
+          pip install pyinstaller beautifulsoup4 playwright pandas requests python-dotenv
+          python -m playwright install chromium
+          pyinstaller --noconsole --onefile src/scripts/ipc.py
+
+      - name: Install Node Dependencies
         run: npm install
 
-      - name: Build and Publish
+      - name: Build and Publish Electron Installer
         env:
-          # THIS INJECTS YOUR PASSWORD INTO THE PROCESS
           PASSWORD: ${{ secrets.PASSWORD }} 
         run: npm run publish
