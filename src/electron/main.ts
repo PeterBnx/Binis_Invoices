@@ -3,6 +3,9 @@ import path from 'path';
 import { isDev, setMainWindow } from './util.js';
 import { getPreloadPath } from './pathResolver.js';
 import { registerAllIpcHandlers } from './ipcHandlers/index.js';
+import pkg from 'electron-updater';
+const { autoUpdater } = pkg;
+
 
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
@@ -29,7 +32,7 @@ async function createMainWindow() {
     splashWindow.show();
 
     mainWindow = new BrowserWindow({
-      width: 1000,
+      width: 1300,
       height: 700,
       minWidth: 600,
       minHeight: 500,
@@ -63,8 +66,27 @@ async function createMainWindow() {
   }
 }
 
+app.whenReady().then(() => {
+  autoUpdater.checkForUpdatesAndNotify();
+  createMainWindow();
+});
 
-app.whenReady().then(createMainWindow);
+autoUpdater.on('checking-for-update', () => {
+  console.log('Checking for update...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available:', info.version);
+});
+
+autoUpdater.on('update-downloaded', () => {
+  console.log('Update downloaded; will install now');
+  autoUpdater.quitAndInstall(); 
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('Updater error:', err);
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

@@ -1,0 +1,27 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build and Publish
+        env:
+          # THIS INJECTS YOUR PASSWORD INTO THE PROCESS
+          APP_SECRET_PASSWORD: ${{ secrets.PASSWORD }} 
+        run: npm run publish

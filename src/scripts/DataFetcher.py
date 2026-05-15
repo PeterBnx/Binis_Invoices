@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 from Product import Product
 from Order import Order
 from requests import Session
@@ -14,12 +15,22 @@ import sys
 
 class DataFetcher:
     def __init__(self):
-        script_dir = Path(__file__).resolve().parent
-        project_root = script_dir.parent.parent
-        env_path = project_root / '.env'
+        if getattr(sys, 'frozen', False):
+            self.base_path = Path(sys._MEIPASS)
+            exe_dir = Path(sys.executable).parent
+            env_path = exe_dir / '.env'
+        else:
+            script_dir = Path(__file__).resolve().parent
+            self.base_path = script_dir.parent.parent
+            env_path = self.base_path / '.env'
         load_dotenv(dotenv_path=env_path)
 
+        executable_dir = Path(sys.executable).parent if getattr(sys, 'frozen', False) else self.base_path
+        self.browser_dir = executable_dir / "ms-playwright"
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(self.browser_dir)
+
         self.db = DB()
+        self.check_playwright_installation()
 
         self.emp_login_url = f"https://www.emporiorologion.gr/admin/controlloaccesso.php"
         self.emp_orders_page_url = f"https://www.emporiorologion.gr/admin/ordini2.php?statoordine=-1&nome=&ordine=&cliente=&referenza=&ups=&datachiusura=&Payment=0&annullato=0&nazione_ordine=-1&ordine_pronto=2&warning=2&marca=-1&primo_ordine=2&pagato=2&API=2&chiavi_in_mano=2&vendita_privata=2&datadal=&dataal="
@@ -110,6 +121,7 @@ class DataFetcher:
         try:
             df = pd.read_excel(io.BytesIO(export_response.content))
         except Exception as e:
+            print(f"Error reading excel file: {e}")
             self.all_cis_registered_products = []
             return False
 
@@ -187,7 +199,7 @@ class DataFetcher:
                 order.get_text(strip=True),
                 client.get_text(strip=True),
                 date.get_text(strip=True),
-                price.get_text(strip=True).replace('€\xa0', '')
+                f"€ {price.get_text(strip=True).replace('€\xa0', '')}"
             ))
         return True
 
@@ -417,6 +429,30 @@ class DataFetcher:
             self.client_name = name_input.get('value')
         else:
             print(client_soup.prettify())
+
+    def check_playwright_installation(self):
+        chromium_glob = list(self.browser_dir.glob("chromium-*"))
+
+        if chromium_glob and (chromium_glob[0] / "chrome-win/chrome.exe").exists():
+            print("Playwright browser check passed (Already Installed).")
+            return
+
+        print("Playwright browsers missing. Installing to local directory...")
+        try:
+            if getattr(sys, 'frozen', False):
+                from playwright.__main__ import main as playwright_main
+                sys.argv = ["playwright", "install", "chromium"]
+                playwright_main()
+            else:
+                subprocess.run(
+                    [sys.executable, "-m", "playwright", "install", "chromium"],
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+            print("Playwright browser installation complete.")
+        except Exception as e:
+            print(f"Error installing browsers safely: {e}")
 
     # UTILS
 

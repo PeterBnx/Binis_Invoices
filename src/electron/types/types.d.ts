@@ -46,6 +46,11 @@ declare global {
       return: string;
     }
 
+    auth_login: {
+      args: string;
+      return: boolean;
+    }
+
     // WEBSOCKET CONNECTION
     start_server_connection: {
       args: void;

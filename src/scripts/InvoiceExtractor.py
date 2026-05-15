@@ -209,8 +209,8 @@ class InvoiceExtractor:
             
             print("Finalizing document...")
             page.locator('#MainContent_Button5').click()
-            # sleep(1)
-            # page.locator('#MainContent_InButon').click()
+            sleep(1)
+            page.locator('#MainContent_InButon').click()
             print("Process finished successfully")
             payload = {
                 "type": "invoice_extraction_finished"

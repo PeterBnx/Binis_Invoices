@@ -3,7 +3,13 @@ import { BrowserWindow, ipcMain } from "electron";
 import { Order } from "../types/objects.js";
 import { runPythonScript, startServer } from "../socketConnection.js";
 
+const CORRECT_PASSWORD = process.env.PASSWORD  
+
 export function register(win: BrowserWindow) {
+    ipcMain.handle('auth_login', (_event, password) => {
+        return password === CORRECT_PASSWORD;
+    })
+
     ipcMain.handle('get_orders', async (_event, args) => {
         startServer();
         runPythonScript('ipc.py', ['get_orders']); 

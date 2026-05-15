@@ -14,8 +14,11 @@ dist-electron
 *.local
 *.pyc
 .env
-
+build
+*.spec
 data
+bin
+ms-playwright
 
 # Editor directories and files
 .vscode/*

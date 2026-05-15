@@ -2,10 +2,10 @@
   "name": "binis-invoices",
   "author": "Petros Binis",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "main": "dist-electron/main.js",
-  "description": "Your app description",
+  "description": "Desktop application for automating the process of invoice extraction for binis.gr",
   "scripts": {
     "dev": "npm-run-all --parallel dev:react dev:electron",
     "dev:react": "vite",
@@ -14,6 +14,7 @@
     "build": "npm run clean && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "publish": "electron-builder --publish always",
     "clean:electron": "rimraf dist-electron",
     "transpile:electron": "npm run clean:electron && tsc --project src/electron/tsconfig.json",
     "postinstall": "electron-builder install-app-deps",
@@ -26,6 +27,7 @@
     "@js-temporal/polyfill": "^0.5.1",
     "@tailwindcss/vite": "^4.1.11",
     "better-sqlite3": "^12.4.1",
+    "electron-updater": "^6.8.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
@@ -58,5 +60,32 @@
     "typescript-eslint": "^8.30.1",
     "vite": "^6.3.5",
     "ws": "^8.18.3"
+  },
+  "repository": {
+  "type": "git",
+  "url": "https://github.com/PeterBnx/Binis_Invoices.git"
+  },
+  "extraResources": [
+    {
+      "from": "dist/ipc.exe",
+      "to": "bin/ipc.exe"
+    },
+    {
+      "from": "C:/Users/binis/AppData/Local/ms-playwright",
+      "to": "bin/ms-playwright"
+    }
+  ],
+  "build": {
+    "appId": "com.peterbnx.binis-invoices",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "PeterBnx",
+        "repo": "Binis_Invoices"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    }
   }
 }

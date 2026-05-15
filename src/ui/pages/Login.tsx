@@ -2,13 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false); // New loading state
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const API_BASE_URL = "";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,20 +14,13 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await fetch(`${API_BASE_URL}/binis_invoices/login/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      
-      const data = await res.json();
-      
-      if (res.ok && data.token) {
-        localStorage.setItem("token", data.token);
-        navigate("/orders");
-      } else {
-        setError(data.error || "Σφάλμα σύνδεσης");
-      }
+      const result = await window.api.invoke('auth_login', password);
+
+        if (result) {
+          navigate("/orders");
+        } else {
+          setError("Λάθος Κωδικός");
+        }
     } finally {
       setIsLoading(false);
     }
@@ -46,14 +37,6 @@ export default function Login() {
         </div>}
         
         <div className="space-y-4">
-          <input 
-            type="text" 
-            autoComplete="username"
-            disabled={isLoading}
-            placeholder="Όνομα χρήστη" 
-            className="w-full p-4 rounded-xl bg-surface text-on-surface border border-outline focus:border-primary outline-none transition-all disabled:opacity-50"
-            onChange={e => setUsername(e.target.value)}
-          />
           <input 
             type="password" 
             autoComplete="current-password"

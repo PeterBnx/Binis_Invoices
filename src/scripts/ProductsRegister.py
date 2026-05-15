@@ -36,7 +36,7 @@ class ProductsRegister:
         self.close_browser()
         
         self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(headless=False, args=[
+        self.browser = self.playwright.chromium.launch(headless=True, args=[
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-gpu',

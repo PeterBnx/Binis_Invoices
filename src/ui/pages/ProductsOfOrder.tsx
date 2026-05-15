@@ -5,7 +5,7 @@ import { MdAdd, MdError, MdOutlineRemove } from "react-icons/md";
 import type { OrderData } from "../../electron/types/objects";
 import { FaCheckCircle, FaFileInvoice } from "react-icons/fa";
 import { IoMdAddCircleOutline, IoMdArrowBack } from "react-icons/io";
-import { IoCheckmark, IoInformationCircleOutline } from "react-icons/io5";
+import { IoCheckmark, IoCloseCircle, IoInformationCircleOutline, IoWarning } from "react-icons/io5";
 import { CiCircleCheck } from "react-icons/ci";
 
 
@@ -29,8 +29,7 @@ type Brand = {
 }
 
 function ProductsOfOrder() {
-    // const { id } = useParams();
-    const id = "86055";
+    const { id } = useParams();
     const [orderData, setOrderData] = useState<OrderData>({
         orderNumber : 'Δεν Βρέθηκε',
         products : [],
@@ -127,11 +126,13 @@ function ProductsOfOrder() {
 
     useEffect(() => {
         console.log('[Products] Fetching products...');
-        window.api.invoke('get_order_data', ['get_order_data', id]).catch(e => {
-            console.error('[Products] Error:', e);
-            setIsLoading(false);
-    });
-    }, []);
+        if (id) {
+            window.api.invoke('get_order_data', ['get_order_data', id]).catch(e => {
+                console.error('[Products] Error:', e);
+                setIsLoading(false);
+            });
+        }
+    }, [id]);
 
     const groupedData = useMemo(() => {
         return productsData.reduce((acc: GroupedProducts, product: Product) => {
@@ -356,12 +357,14 @@ function ProductsOfOrder() {
                         className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-white/10 hover:text-[var(--text)] transition-all cursor-pointer"
                         aria-label="Close"
                     >
-                        <span className="material-symbols-outlined text-2xl">close</span>
+                        <span className="material-symbols-outlined text-2xl"><IoCloseCircle /></span>
                     </button>
 
                     {/* Header */}
                     <div className="flex items-center gap-4 text-red-500 mb-4 pr-8"> {/* Added padding-right so text doesn't hit the X */}
-                        <span className="select-none material-symbols-outlined text-4xl">warning</span>
+                        <span className="select-none material-symbols-outlined text-4xl">
+                            <IoWarning />   
+                        </span>
                         <h3 className="select-none text-xl font-bold text-[var(--text)]">Εκκρεμεί Καταχώρηση</h3>
                     </div>
 
@@ -845,7 +848,6 @@ function ProductsOfOrder() {
                                                                 focus:border-[var(--primary)] min-w-[60px] inline-block"
                                                     onBlur={(e) => {
                                                         const newText = e.currentTarget.textContent || "";
-                                                        // Clean the input: replace commas with dots for valid numbers if needed
                                                         const formattedPrice = newText.replace(',', '.').trim();
                                                         updateProduct(product.code, 'price', formattedPrice);
                                                     }}

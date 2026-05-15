@@ -3,6 +3,7 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { getMainWindow } from './util.js';
 import { spawn } from 'child_process';
 import { getScriptsPath } from './pathResolver.js';
+import path from 'path';
 
 interface Connection {
   server: WebSocketServer | null;
@@ -67,18 +68,26 @@ export function stopServer(): boolean {
 
 
 export function runPythonScript(scriptName: string, args: string[] = [], data = null) {
-  const scriptPath = getScriptsPath() + scriptName;
-  const pythonProcess = spawn('python', ['-u', scriptPath, ...args], {
-    env: {...process.env, PYTHONIOENCODING: 'utf-8'}
+  const isProd = process.env.NODE_ENV === 'production';
+  const exePath = isProd
+    ? path.join(process.resourcesPath, 'bin', 'ipc.exe')
+    : 'python';
+  const spawnArgs = isProd 
+    ? [...args] 
+    : [path.join(getScriptsPath(), scriptName), ...args];
+
+  const pythonProcess = spawn(exePath, spawnArgs, {
+    env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
   });
 
   pythonProcess.stdout.setEncoding('utf8');
+  
   if (data) {
     pythonProcess.stdin.write(JSON.stringify(data));
     pythonProcess.stdin.end();
   }
   
-  console.log(`[PYTHON] Running: ${scriptPath}`);
+  console.log(`[PYTHON] Spawning executable: ${exePath} with args:`, spawnArgs);
 
   pythonProcess.stdout.on('data', (data) => {
     console.log(`[PYTHON STDOUT]: ${data.toString('utf-8')}`);
