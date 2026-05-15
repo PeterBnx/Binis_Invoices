@@ -31,7 +31,14 @@ jobs:
       - name: Install Node Dependencies
         run: npm install
 
+      - name: Transpile Electron Main Process
+        run: npm run transpile:electron
+
+      - name: Build React UI Frontend
+        run: npm run build
+
       - name: Build and Publish Electron Installer
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PASSWORD: ${{ secrets.PASSWORD }} 
         run: npm run publish

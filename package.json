@@ -69,7 +69,7 @@
       "to": "bin/ipc.exe"
     },
     {
-      "from": "C:/Users/binis/AppData/Local/ms-playwright",
+      "from": "${HOMEDRIVE}${HOMEPATH}/AppData/Local/ms-playwright",
       "to": "bin/ms-playwright"
     }
   ],
