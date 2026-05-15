@@ -23,5 +23,5 @@ jobs:
       - name: Build and Publish
         env:
           # THIS INJECTS YOUR PASSWORD INTO THE PROCESS
-          APP_SECRET_PASSWORD: ${{ secrets.PASSWORD }} 
+          PASSWORD: ${{ secrets.PASSWORD }} 
         run: npm run publish
