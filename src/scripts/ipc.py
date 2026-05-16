@@ -48,11 +48,23 @@ def main():
         ws = websocket.create_connection('ws://localhost:5555/websocket')
 
         if (sys.argv[1] == "save_credentials"):
-            print("Hello from creds")
             success = db.update_creds(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
             payload = {
                 "type": "credentials_saved",
                 "status": success
+            }
+            json_payload = json.dumps(payload, ensure_ascii=False)
+            ws.send(json_payload)
+            return
+        
+        elif (sys.argv[1] == "get_credentials"):
+            load_credentials_from_db()
+            payload = {
+                "type": "credentials",
+                "emp_user": credentials.get('EMP_NAME'),
+                "emp_pass": credentials.get('EMP_PASSWD'),
+                "cis_user": credentials.get('CIS_NAME'),
+                "cis_pass": credentials.get('CIS_PASSWD'),
             }
             json_payload = json.dumps(payload, ensure_ascii=False)
             ws.send(json_payload)

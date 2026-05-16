@@ -60,6 +60,10 @@ declare global {
       cisPass: string;
       return: boolean;
     };
+    get_credentials: {
+      args: void;
+      return: boolean;
+    };
   }
 }
 

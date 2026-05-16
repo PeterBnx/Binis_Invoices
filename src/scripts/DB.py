@@ -53,7 +53,6 @@ class DB:
 
     def update_creds(self, emp_name, emp_pass, cis_name, cis_pass):
         try:
-            print(emp_name, emp_pass)
             self.cursor.execute("SELECT rowid FROM CREDS LIMIT 1")
             row = self.cursor.fetchone()
             if row:

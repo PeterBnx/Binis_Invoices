@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { IoClose } from "react-icons/io5";
 
 export default function Settings({ onClose }: { onClose: () => void }) {
   const [empUser, setEmpUser] = useState("");
@@ -6,7 +7,38 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   const [cisUser, setCisUser] = useState("");
   const [cisPass, setCisPass] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const unsubscribe = window.api.receive('socket_message', (message: any) => {
+      if (message.type === "credentials") {
+        console.log('[Credentials] Received socket_message:', message);
+        try {
+          const data = typeof message === 'string' ? JSON.parse(message) : message;
+          console.log('[Orders] Parsed data:', data);
+          setEmpUser(message.emp_user);
+          setEmpPass(message.emp_pass);
+          setCisUser(message.cis_user);
+          setCisPass(message.cis_pass);
+          setIsLoading(false);
+        } catch (e) {
+          console.error('[Credentials] Failed to parse message:', e);
+        }
+      }
+      else return;
+      });
+      return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    console.log('[Credentials] Fetching credentials...');
+    window.api.invoke('get_credentials').catch(e => {
+      console.error('[Orders] Error:', e);
+      setIsLoading(false);
+    });
+  }, []);
   
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -27,20 +59,29 @@ export default function Settings({ onClose }: { onClose: () => void }) {
       setTimeout(() => setMessage(""), 3000);
     }
     setIsSaving(false);
+    onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-8">
       <div className="max-w-4xl w-full flex flex-col h-[85vh] relative rounded-lg shadow-2xl bg-[var(--bg)] border border-[var(--border-muted)] overflow-hidden">
-        
+        {/* Loading Overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-[var(--bg)]/90 backdrop-blur-md transition-all">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-[var(--border-muted)] border-t-[var(--primary)] animate-spin"></div>
+            </div>
+            <p className="mt-4 text-sm font-medium text-[var(--text-muted)] animate-pulse uppercase tracking-widest">
+              ανακτηση στοιχειων...
+            </p>
+          </div>
+        )}
         <button
           title="close"
           onClick={onClose}
           className="absolute top-6 right-6 p-2 rounded-full hover:bg-[var(--bg-dark)] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors cursor-pointer z-10"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <IoClose />
         </button>
 
         <div className="p-10 flex flex-col h-full">

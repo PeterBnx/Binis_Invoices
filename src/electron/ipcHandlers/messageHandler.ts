@@ -45,6 +45,11 @@ export function register(win: BrowserWindow) {
         runPythonScript('ipc.py', ['save_credentials', empUser, empPass, cisUser, cisPass], null);
         return true;
     });
+
+    ipcMain.handle('get_credentials', async(_event, creds) => {
+        runPythonScript('ipc.py', ['get_credentials'], null);
+        return true;
+    });
 }
 
 export default register;

@@ -3,6 +3,7 @@ import type { Order } from "../../electron/types/objects";
 import { useNavigate } from "react-router-dom";
 import OrderRow from "../components/OrderRow";
 import Settings from "../components/Settings";
+import { MdSettings } from "react-icons/md";
 
 function Orders() {
   const [settingsView, setSettingsView] = useState<boolean>(false);
@@ -28,7 +29,7 @@ function Orders() {
         }
       } 
       else if (message.type === "empty_credentials") {
-        alert('Παρακαλώ ενημερώστε τους κωδικούς σας.')
+        // alert('Παρακαλώ ενημερώστε τους κωδικούς σας.')
         setSettingsView(true);
       }
       else if (message.type === "playwright_installed") {
@@ -60,21 +61,45 @@ function Orders() {
   }
 
   return (
-    <main className="h-screen flex flex-col p-8 bg-[var(--bg-dark)] text-[var(--text)] overflow-hidden">
+    <div>
       {settingsView && (
         <Settings onClose={() => {
           setSettingsView(false);
           onReloadClick();
         }}/>
       )}
+    <main className="h-screen flex flex-col p-8 bg-[var(--bg-dark)] text-[var(--text)] overflow-hidden">
       <div className="max-w-6xl w-full mx-auto flex flex-col h-full">
-        <header className="mb-8 flex-shrink-0">
-          <h1 className="text-5xl font-bold mb-2 text-[var(--text)]">
-            Παραγγελίες
-          </h1>
-          <p className="text-lg text-[var(--text-muted)]">
-            Επιλέξτε μία από τις παρακάτω παραγγελίες
-          </p>
+        <header className="mb-8 flex-shrink-0 flex items-start justify-between">
+          <div>
+            <h1 className="text-5xl font-bold mb-2 text-[var(--text)] tracking-tight">
+              Παραγγελίες
+            </h1>
+            <p className="text-lg text-[var(--text-muted)]">
+              Επιλέξτε μία από τις παρακάτω παραγγελίες
+            </p>
+          </div>
+
+          <div className="flex gap-4 items-center">
+            <button
+              onClick={() => setSettingsView(true)}
+              className="p-2 rounded-xl bg-[var(--bg-dark)] border border-[var(--border-muted)] text-[var(--text-muted)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-all group"
+              title="Ρυθμίσεις"
+            >
+              <MdSettings size={25}/>
+            </button>
+
+            {/* The New Action Button */}
+            <button 
+              onClick={onReloadClick} // or whatever action you need
+              className="flex items-center gap-2 px-6 py-3 font-bold rounded-xl bg-[var(--primary)] text-[var(--bg-dark)] hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[var(--primary)]/10"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Ανανέωση
+            </button>
+          </div>
         </header>
 
 
@@ -115,7 +140,7 @@ function Orders() {
                         <button 
                           onClick={onReloadClick}
                           className="px-6 py-2 font-medium rounded-lg transition-colors duration-200 shadow-lg bg-[var(--primary)] text-[var(--bg-dark)] hover:opacity-90"
-                        >
+                          >
                           Επαναφόρτωση
                         </button>
                       </div>
@@ -132,6 +157,7 @@ function Orders() {
         </section>
       </div>
     </main>
+      </div>
   );
 }
 export default Orders;
