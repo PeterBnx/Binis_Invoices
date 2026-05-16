@@ -1,32 +1,40 @@
 import os
 import json
-import signal
-from contextlib import contextmanager
+from pathlib import Path
+import sys
+from dotenv import load_dotenv
 from websocket import WebSocket
-from DB import DB
+if getattr(sys, 'frozen', False):
+    bin_dir = Path(sys.executable).parent
+    base_path = bin_dir.parent 
+    sys.path.append(str(bin_dir))
+    sys.path.append(str(bin_dir / "_internal"))
+else:
+    base_path = Path(__file__).resolve().parent.parent.parent
+    bin_dir = base_path / "src" / "scripts"
+dotenv_path = base_path / ".env"
+load_dotenv(dotenv_path=dotenv_path)
 
-class TimeoutException(Exception):
-    pass
-
-@contextmanager
-def timeout(seconds):
-    def handler(signum, frame):
-        raise TimeoutException("Operation timed out")
-    signal.signal(signal.SIGALRM, handler)
-    signal.alarm(seconds)
-    try:
-        yield
-    finally:
-        signal.alarm(0)
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(bin_dir / "ms-playwright")
+from db import DB
 
 class ProductsRegister:
-    def __init__(self, data, ws:WebSocket):
+    def __init__(self, data, ws:WebSocket, credentials):
         self.playwright = None
         self.browser = None
         self.data = data
         self.ws = ws
-        self.cis_name = os.environ.get('CIS_NAME')
-        self.cis_passwd = os.environ.get('CIS_PASSWD')
+        if getattr(sys, 'frozen', False):
+            self.base_path = Path(sys._MEIPASS)
+        else:
+            script_dir = Path(__file__).resolve().parent
+            self.base_path = script_dir.parent.parent
+
+        if "PLAYWRIGHT_BROWSERS_PATH" not in os.environ:
+            executable_dir = Path(sys.executable).parent if getattr(sys, 'frozen', False) else self.base_path
+            os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(executable_dir / "ms-playwright")
+        self.cis_name = credentials.get('CIS_NAME')
+        self.cis_passwd = credentials.get('CIS_PASSWD')  
         self.run()
 
     def start_session(self):
@@ -87,11 +95,11 @@ class ProductsRegister:
         if "updated_brands" not in order_data:
             raise KeyError("order_data missing 'updated_brands' key. Keys: " + str(order_data.keys()))
         
-        db = DB()
+        database = DB()
         products = order_data["products"]
         updated_brands = order_data["updated_brands"]
         
-        db.update_db_brands(updated_brands)
+        database.update_db_brands(updated_brands)
 
         try:
             page = self.start_session()

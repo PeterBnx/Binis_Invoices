@@ -1,8 +1,18 @@
 import { Order, OrderData } from "./objects.ts";
 
-export {};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type message = any; 
 
 declare global {
+  interface ImportMetaEnv {
+    readonly VITE_SUPABASE_URL: string;
+    readonly VITE_SUPABASE_ANON_KEY: string; // Fixed name to match client
+  }
+
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
+
   interface Window {
     api: IpcApi;
   }
@@ -13,60 +23,44 @@ declare global {
     invoke: <K extends keyof IpcInvokeChannels>(channel: K, data?: IpcInvokeChannels[K]['args']) => Promise<IpcInvokeChannels[K]['return']>;
   }
 
-  // Messages sent from renderer to main (fire and forget)
   interface IpcSendChannels {
     run_python_script: string;
-  };
+  }
 
-  // Messages received in renderer from main (via send)
   interface IpcReceiveChannels {
     message_from_client: [message];
     socket_message: [message];
-  };
+  }
 
-  // Messages from renderer expecting a response (invoke/handle)
   interface IpcInvokeChannels {
     get_orders: {
       args: void;
       return: Order[];
-    },
-
+    };
     get_order_data: {
       args: string[];
       return: OrderData;
-    }
-
+    };
     register_products: {
       args: string;
       return: string;
-    }
-
+    };
     extract_invoice: {
       args: string;
       return: string;
-    }
-
-    auth_login: {
-      args: string;
-      return: boolean;
-    }
-
-    // WEBSOCKET CONNECTION
-    start_server_connection: {
+    };
+    get_email: {
       args: void;
+      return: string | undefined;
+    };
+    save_credentials: {
+      empName: string;
+      empPass: string;
+      cisName: string;
+      cisPass: string;
       return: boolean;
-    },
-    stop_server_connection: {
-      args: void;
-      return: boolean;
-    },
-
-    // UTILS
-    are_objects_different: {
-      args: [object, object];
-      return: boolean;
-    },
-  
-  };
-
+    };
+  }
 }
+
+export {};

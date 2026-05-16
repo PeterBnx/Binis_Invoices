@@ -6,9 +6,9 @@ class DB:
     def __init__(self):
         script_dir = Path(__file__).resolve().parent
         project_root = script_dir.parent.parent
-
         self.db_connection = sqlite3.connect(project_root / 'data.db')
         self.cursor = self.db_connection.cursor()
+        self.credentials = []
         self.initializeDB()
     
     def initializeDB(self):
@@ -17,7 +17,62 @@ class DB:
                 Brand_Full VARCHAR(255) PRIMARY KEY,
                 Brand_Short CHAR(25) NOT NULL
             );
+        """)
+        self.db_connection.commit()
+
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS CREDS (
+                Emp_Name VARCHAR(255) NOT NULL,
+                Emp_Password CHAR(25) NOT NULL,
+                Cis_Name CHAR(25) PRIMARY KEY,
+                Cis_Password CHAR(25) NOT NULL
+            );
+        """)
+        self.db_connection.commit()
+
+        self.cursor.execute("SELECT COUNT(*) FROM CREDS;")
+        row_count = self.cursor.fetchone()[0]
+
+        if row_count == 0:
+            self.cursor.execute("""
+                INSERT INTO CREDS ( Emp_Name, Emp_Password, Cis_Name, Cis_Password )
+                VALUES (None, None, None, None);
             """)
+            self.db_connection.commit()
+
+    def check_creds(self):
+        self.cursor.execute('SELECT * FROM CREDS')
+        result = self.cursor.fetchall()
+        if not result:
+            return False
+        self.credentials = [val for val in result[0]]
+        for val in self.credentials:
+            if val is None or val == "":
+                return False
+        return True
+
+    def update_creds(self, emp_name, emp_pass, cis_name, cis_pass):
+        try:
+            print(emp_name, emp_pass)
+            self.cursor.execute("SELECT rowid FROM CREDS LIMIT 1")
+            row = self.cursor.fetchone()
+            if row:
+                row_id = row[0]
+                self.cursor.execute('''
+                    UPDATE CREDS 
+                    SET Emp_Name = ?, Emp_Password = ?, Cis_Name = ?, Cis_Password = ?
+                    WHERE rowid = ?
+                ''', (emp_name, emp_pass, cis_name, cis_pass, row_id))
+            else:
+                self.cursor.execute('''
+                    INSERT INTO CREDS (Emp_Name, Emp_Password, Cis_Name, Cis_Password)
+                    VALUES (?, ?, ?, ?)
+                ''', (emp_name, emp_pass, cis_name, cis_pass))
+            self.db_connection.commit()
+            return True
+        except Exception as e:
+            print(f"Error in updating creds: {e}")
+            return False
         
     def get_all_db_brands(self) -> list[any]:
         self.cursor.execute(''' 

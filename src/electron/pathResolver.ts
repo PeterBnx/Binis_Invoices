@@ -1,27 +1,18 @@
 import path from 'path';
 import { app } from 'electron';
-import { isDev } from './util.js';
+
+const isPackaged = app.isPackaged;
 
 export function getPreloadPath() {
-  return path.join(
-    app.getAppPath(),
-    isDev() ? '.' : '..',
-    '/dist-electron/preload.cjs'
-  );
-};
-
-export function getDataPath() {
-  return path.join(
-    app.getAppPath(),
-    isDev() ? '.' : '..',
-    '/data/'
-  );
-};
+  if (!isPackaged) {
+    return path.join(app.getAppPath(), 'dist-electron', 'preload.cjs');
+  }
+  return path.join(app.getAppPath(), 'dist-electron', 'preload.cjs');
+}
 
 export function getScriptsPath() {
-  return path.join(
-    app.getAppPath(),
-    isDev() ? '.' : '..',
-    '/src/scripts/'
-  );
-};
+  if (!isPackaged) {
+    return path.join(app.getAppPath(), 'src','scripts'); 
+  }
+  return path.join(process.resourcesPath, 'bin');
+}

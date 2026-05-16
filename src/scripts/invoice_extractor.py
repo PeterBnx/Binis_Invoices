@@ -1,18 +1,43 @@
+from dotenv import load_dotenv
 import os
 import json
+from pathlib import Path
+import sys
 from time import sleep, time
+if getattr(sys, 'frozen', False):
+    bin_dir = Path(sys.executable).parent
+    base_path = bin_dir.parent 
+    sys.path.append(str(bin_dir))
+    sys.path.append(str(bin_dir / "_internal"))
+else:
+    base_path = Path(__file__).resolve().parent.parent.parent
+    bin_dir = base_path / "src" / "scripts"
+dotenv_path = base_path / ".env"
+load_dotenv(dotenv_path=dotenv_path)
 
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(bin_dir / "ms-playwright")
 from websocket import WebSocket
-from DB import DB
+from db import DB
 
 class InvoiceExtractor:
-    def __init__(self):
+    def __init__(self, credentials):
         self.unregistered_products = []
         self.playwright = None
         self.browser = None
-        self.cis_name = os.environ.get('CIS_NAME')
-        self.cis_passwd = os.environ.get('CIS_PASSWD')
-        self.db = DB()
+        if getattr(sys, 'frozen', False):
+            self.base_path = Path(sys._MEIPASS)
+        else:
+            script_dir = Path(__file__).resolve().parent
+            self.base_path = script_dir.parent.parent
+            from dotenv import load_dotenv
+            load_dotenv(dotenv_path=self.base_path / '.env')
+
+        if "PLAYWRIGHT_BROWSERS_PATH" not in os.environ:
+            executable_dir = Path(sys.executable).parent if getattr(sys, 'frozen', False) else self.base_path
+            os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(executable_dir / "ms-playwright")
+        self.cis_name = credentials.get('CIS_NAME')
+        self.cis_passwd = credentials.get('CIS_PASSWD')  
+        self.database = DB()
 
     def extract_invoice(self, order_data, ws: WebSocket):
         print(order_data)
@@ -34,7 +59,7 @@ class InvoiceExtractor:
         
         try:
             print("Attempting to update DB brands...")
-            self.db.update_db_brands(updated_brands)
+            self.database.update_db_brands(updated_brands)
             print("DB brands updated successfully")
         except Exception as e:
             print(f"Failed to update DB brands: {e}")
@@ -228,7 +253,7 @@ class InvoiceExtractor:
         
         finally:
             print("Cleaning up resources...")
-            # self.close_browser()
+            self.close_browser()
 
     def close_browser(self):
         try:

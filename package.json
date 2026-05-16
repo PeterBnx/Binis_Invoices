@@ -10,22 +10,23 @@
     "dev": "npm-run-all --parallel dev:react dev:electron",
     "dev:react": "vite",
     "dev:electron": "npm run transpile:electron && cross-env NODE_ENV=development electron .",
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "publish": "electron-builder --publish always",
+    "clean:dist": "rimraf dist",
+    "clean:react": "rimraf dist-react",
     "clean:electron": "rimraf dist-electron",
+    "clean:all": "rimraf dist dist-react dist-electron",
+    "build": "npm run clean:react && tsc -b && vite build",
     "transpile:electron": "npm run clean:electron && tsc --project src/electron/tsconfig.json",
+    "bundle:all": "pyinstaller --clean --onedir --noconsole --noconfirm --paths src/scripts src/scripts/ipc.py --distpath ./dist && npm run transpile:electron && npm run build && npx electron-builder --dir -c.directories.output=release",
+    "publish": "electron-builder --publish always",
     "postinstall": "electron-builder install-app-deps",
-    "dist:mac": "npm run transpile:electron && npm run build && electron-builder --mac --arm64",
-    "dist:win": "npm run transpile:electron && npm run build && electron-builder --win --x64",
-    "dist:linux": "npm run transpile:electron && npm run build && electron-builder --linux --x64",
+    "dist:win": "npm run clean:all && npm run transpile:electron && npm run build && electron-builder --win --x64",
     "dist": "npm run dist:win"
   },
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1",
+    "@supabase/supabase-js": "^2.105.4",
     "@tailwindcss/vite": "^4.1.11",
+    "dotenv": "^17.4.2",
     "electron-updater": "^6.8.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
@@ -65,16 +66,31 @@
   },
   "extraResources": [
     {
-      "from": "dist/ipc.exe",
-      "to": "bin/ipc.exe"
+      "from": "dist/ipc/",
+      "to": "bin/"
     },
     {
-      "from": "${HOMEDRIVE}${HOMEPATH}/AppData/Local/ms-playwright",
+      "from": "data/",
+      "to": "data/"
+    },
+    {
+      "from": "ms-playwright/",
       "to": "bin/ms-playwright"
     }
   ],
   "build": {
     "appId": "com.peterbnx.binis-invoices",
+    "files": [
+      "dist-electron/**/*",
+      "dist-react/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "dist/ipc/",
+        "to": "bin/"
+      }
+    ],
     "publish": [
       {
         "provider": "github",
@@ -83,7 +99,7 @@
       }
     ],
     "directories": {
-      "output": "dist"
+      "output": "release"
     }
   }
 }

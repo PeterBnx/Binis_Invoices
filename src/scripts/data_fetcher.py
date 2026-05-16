@@ -1,4 +1,19 @@
+import os
+import sys
 from pathlib import Path
+
+
+if getattr(sys, 'frozen', False):
+    bin_dir = Path(sys.executable).parent
+    base_path = bin_dir.parent 
+    sys.path.append(str(bin_dir))
+    sys.path.append(str(bin_dir / "_internal"))
+else:
+    base_path = Path(__file__).resolve().parent.parent.parent
+    bin_dir = base_path / "src" / "scripts"
+
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(bin_dir / "ms-playwright")
+
 import subprocess
 from Product import Product
 from Order import Order
@@ -8,29 +23,19 @@ from re import compile
 from lxml import etree
 import pandas as pd
 import io
-import os
-from dotenv import load_dotenv
-from DB import DB
-import sys
+from db import DB
 
 class DataFetcher:
-    def __init__(self):
-        if getattr(sys, 'frozen', False):
-            self.base_path = Path(sys._MEIPASS)
-            exe_dir = Path(sys.executable).parent
-            env_path = exe_dir / '.env'
-        else:
-            script_dir = Path(__file__).resolve().parent
-            self.base_path = script_dir.parent.parent
-            env_path = self.base_path / '.env'
-        load_dotenv(dotenv_path=env_path)
-
-        executable_dir = Path(sys.executable).parent if getattr(sys, 'frozen', False) else self.base_path
-        self.browser_dir = executable_dir / "ms-playwright"
-        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(self.browser_dir)
-
-        self.db = DB()
+    def __init__(self, credentials):
+        
         self.check_playwright_installation()
+        self.browser_dir = Path(os.environ.get("PLAYWRIGHT_BROWSERS_PATH"))
+        self.emp_name = credentials.get('EMP_NAME')
+        self.emp_passwd = credentials.get('EMP_PASSWD')
+        self.cis_name = credentials.get('CIS_NAME')
+        self.cis_passwd = credentials.get('CIS_PASSWD')
+
+        self.database = DB()
 
         self.emp_login_url = f"https://www.emporiorologion.gr/admin/controlloaccesso.php"
         self.emp_orders_page_url = f"https://www.emporiorologion.gr/admin/ordini2.php?statoordine=-1&nome=&ordine=&cliente=&referenza=&ups=&datachiusura=&Payment=0&annullato=0&nazione_ordine=-1&ordine_pronto=2&warning=2&marca=-1&primo_ordine=2&pagato=2&API=2&chiavi_in_mano=2&vendita_privata=2&datadal=&dataal="
@@ -39,11 +44,6 @@ class DataFetcher:
         self.session = Session()
         self.all_cis_registered_products = []
         self.emp_orders = []
-
-        self.emp_name = os.environ.get('EMP_NAME')
-        self.emp_passwd = os.environ.get('EMP_PASSWD')
-        self.cis_name = os.environ.get('CIS_NAME')
-        self.cis_passwd = os.environ.get('CIS_PASSWD')
 
 
         self.emp_orders = []
@@ -342,8 +342,8 @@ class DataFetcher:
             "GOGGLES": "Γυαλιά"
         }
 
-        all_brands = self.db.get_all_db_brands()
-        self.db.db_connection.commit()
+        all_brands = self.database.get_all_db_brands()
+        self.database.db_connection.commit()
         brands_dict = {brand[0]: brand[1] for brand in all_brands}
         brands_elements = self.soup.find_all(class_ = 'Stile11')
 
@@ -397,9 +397,9 @@ class DataFetcher:
                     brand_found_db = brands_dict.get(brands_full[i])
                     
                     if (brand_found_db and brand_found_db != brand_short):
-                        self.db.update_db_brand(brands_full[i], brand_short)
+                        self.database.update_db_brand(brands_full[i], brand_short)
                     elif (not brand_found_db):
-                        self.db.insert_db_brand(brands_full[i], brand_short)
+                        self.database.insert_db_brand(brands_full[i], brand_short)
 
                     brands_dict.update({brands_full[i] : brand_short})                        
 
@@ -431,30 +431,35 @@ class DataFetcher:
             print(client_soup.prettify())
 
     def check_playwright_installation(self):
-        chromium_glob = list(self.browser_dir.glob("chromium-*"))
-
-        if chromium_glob and (chromium_glob[0] / "chrome-win/chrome.exe").exists():
-            print("Playwright browser check passed (Already Installed).")
+        browser_path = Path(os.environ["PLAYWRIGHT_BROWSERS_PATH"])
+        chromium_glob = list(browser_path.glob("chromium-*"))
+        
+        if chromium_glob and any(chromium_glob[0].iterdir()):
+            print("Playwright browser check passed.")
             return
 
-        print("Playwright browsers missing. Installing to local directory...")
+        print("Playwright browsers missing. Starting automatic installation...")
         try:
             if getattr(sys, 'frozen', False):
                 from playwright.__main__ import main as playwright_main
+                original_args = sys.argv
                 sys.argv = ["playwright", "install", "chromium"]
-                playwright_main()
+                
+                try:
+                    playwright_main()
+                except SystemExit:
+                    print("Playwright installation finished. Continuing execution...")
+                finally:
+                    sys.argv = original_args
             else:
                 subprocess.run(
                     [sys.executable, "-m", "playwright", "install", "chromium"],
-                    check=True,
-                    capture_output=True,
-                    text=True
+                    check=True
                 )
-            print("Playwright browser installation complete.")
+            
+            print("Ready to fetch data.")
         except Exception as e:
-            print(f"Error installing browsers safely: {e}")
-
-    # UTILS
+            print(f"Error during automatic installation: {e}")
 
     # e.g. xpath = /html/body/form/center/table[2]/tr[1]/th/span then returns 1 (tr[1])
     def xpath_to_tr_index(self, xpath: str):

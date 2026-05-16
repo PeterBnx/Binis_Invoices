@@ -4,6 +4,7 @@ import { getMainWindow } from './util.js';
 import { spawn } from 'child_process';
 import { getScriptsPath } from './pathResolver.js';
 import path from 'path';
+import { app } from 'electron';
 
 interface Connection {
   server: WebSocketServer | null;
@@ -13,6 +14,13 @@ interface Connection {
 const connection: Connection = {
   server: null,
   clients: new Set(),
+};
+
+const envVars = {
+  ...process.env,
+  PLAYWRIGHT_BROWSERS_PATH: app.isPackaged 
+    ? path.join(process.resourcesPath, 'ms-playwright')
+    : path.join(app.getAppPath(), 'ms-playwright')
 };
 
 export function startServer(): boolean {
@@ -68,16 +76,20 @@ export function stopServer(): boolean {
 
 
 export function runPythonScript(scriptName: string, args: string[] = [], data = null) {
-  const isProd = process.env.NODE_ENV === 'production';
-  const exePath = isProd
+  const isPackaged = app.isPackaged;
+
+  const exePath = isPackaged
     ? path.join(process.resourcesPath, 'bin', 'ipc.exe')
     : 'python';
-  const spawnArgs = isProd 
+
+  const spawnArgs = isPackaged 
     ? [...args] 
     : [path.join(getScriptsPath(), scriptName), ...args];
 
+  console.log(`[PYTHON] Spawning target: ${exePath} with args:`, spawnArgs);
+
   const pythonProcess = spawn(exePath, spawnArgs, {
-    env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+    env: { ...envVars, PYTHONIOENCODING: 'utf-8' }
   });
 
   pythonProcess.stdout.setEncoding('utf8');
@@ -86,11 +98,9 @@ export function runPythonScript(scriptName: string, args: string[] = [], data = 
     pythonProcess.stdin.write(JSON.stringify(data));
     pythonProcess.stdin.end();
   }
-  
-  console.log(`[PYTHON] Spawning executable: ${exePath} with args:`, spawnArgs);
 
   pythonProcess.stdout.on('data', (data) => {
-    console.log(`[PYTHON STDOUT]: ${data.toString('utf-8')}`);
+    console.log(`[PYTHON STDOUT]: ${data.toString()}`);
   });
 
   pythonProcess.stderr.on('data', (data) => {

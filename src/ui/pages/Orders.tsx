@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import type { Order } from "../../electron/types/objects";
 import { useNavigate } from "react-router-dom";
 import OrderRow from "../components/OrderRow";
+import Settings from "../components/Settings";
 
 function Orders() {
+  const [settingsView, setSettingsView] = useState<boolean>(false);
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [reload, setReload] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -12,19 +14,25 @@ function Orders() {
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const unsubscribe = window.api.receive('socket_message', (message: any) => {
-      if (message.type !== "emp_orders") return;
-      console.log('[Orders] Received socket_message:', message);
-      try {
-        const data = typeof message === 'string' ? JSON.parse(message) : message;
-        console.log('[Orders] Parsed data:', data);
-        setOrders(Array.isArray(data.data) ? data.data : []);
-        setIsLoading(false);
-      } catch (e) {
-        console.error('[Orders] Failed to parse message:', e);
-        setOrders([]);
-        setIsLoading(false);
-      }
-    });
+      if (message.type === "emp_orders") {
+        console.log('[Orders] Received socket_message:', message);
+        try {
+          const data = typeof message === 'string' ? JSON.parse(message) : message;
+          console.log('[Orders] Parsed data:', data);
+          setOrders(Array.isArray(data.data) ? data.data : []);
+          setIsLoading(false);
+        } catch (e) {
+          console.error('[Orders] Failed to parse message:', e);
+          setOrders([]);
+          setIsLoading(false);
+        }
+      } 
+      else if (message.type === "empty_credentials") {
+        alert('Παρακαλώ ενημερώστε τους κωδικούς σας.')
+        setSettingsView(true);
+      } 
+      else return;
+      });
     return unsubscribe;
   }, []);
 
@@ -50,6 +58,12 @@ function Orders() {
 
   return (
     <main className="h-screen flex flex-col p-8 bg-[var(--bg-dark)] text-[var(--text)] overflow-hidden">
+      {settingsView && (
+        <Settings onClose={() => {
+          setSettingsView(false);
+          onReloadClick();
+        }}/>
+      )}
       <div className="max-w-6xl w-full mx-auto flex flex-col h-full">
         <header className="mb-8 flex-shrink-0">
           <h1 className="text-5xl font-bold mb-2 text-[var(--text)]">
@@ -59,6 +73,7 @@ function Orders() {
             Επιλέξτε μία από τις παρακάτω παραγγελίες
           </p>
         </header>
+
 
         {isLoading && (
           <div className="fixed inset-0 z-50 flex flex-col items-center justify-center backdrop-blur-sm bg-black/60">

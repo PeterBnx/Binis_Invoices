@@ -1,15 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { BrowserWindow, ipcMain } from "electron";
-import { Order } from "../types/objects.js";
 import { runPythonScript, startServer } from "../socketConnection.js";
+import * as dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from "url";
 
-const CORRECT_PASSWORD = process.env.PASSWORD  
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function register(win: BrowserWindow) {
-    ipcMain.handle('auth_login', (_event, password) => {
-        return password === CORRECT_PASSWORD;
-    })
-
     ipcMain.handle('get_orders', async (_event, args) => {
         startServer();
         runPythonScript('ipc.py', ['get_orders']); 
@@ -20,7 +19,6 @@ export function register(win: BrowserWindow) {
     ipcMain.handle('get_order_data', async (_event, args) => {
         startServer();
         runPythonScript('ipc.py', args); 
-        
         return { status: "fetching_started" };
     });
 
@@ -34,6 +32,18 @@ export function register(win: BrowserWindow) {
         startServer();
         runPythonScript('ipc.py', ['extract_invoice'], args);
         return { status: "invoice_extraction_started" };
+    });
+
+    ipcMain.handle('get_email', async(_event, args) => {
+        dotenv.config({ path: path.join(__dirname, '../../.env') });
+        console.log(path.join(__dirname, '../../.env'));
+        return process.env.VITE_USER_EMAIL;
+    });
+
+    ipcMain.handle('save_credentials', async(_event, creds) => {
+        const { empUser, empPass, cisUser, cisPass } = creds;
+        runPythonScript('ipc.py', ['save_credentials', empUser, empPass, cisUser, cisPass], null);
+        return true;
     });
 }
 
