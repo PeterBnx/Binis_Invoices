@@ -1,6 +1,8 @@
+import json
 import os
 import sys
 from pathlib import Path
+from websocket import WebSocket
 
 
 if getattr(sys, 'frozen', False):
@@ -26,9 +28,15 @@ import io
 from db import DB
 
 class DataFetcher:
-    def __init__(self, credentials):
-        
-        self.check_playwright_installation()
+    def __init__(self, credentials, ws: WebSocket):
+        self.ws = ws
+        if not self.check_playwright_installation():
+            payload = {
+                "type": "playwright_installed"
+            }
+            json_payload = json.dumps(payload, ensure_ascii=False)
+            ws.send(json_payload)
+            return
         self.browser_dir = Path(os.environ.get("PLAYWRIGHT_BROWSERS_PATH"))
         self.emp_name = credentials.get('EMP_NAME')
         self.emp_passwd = credentials.get('EMP_PASSWD')
@@ -430,13 +438,14 @@ class DataFetcher:
         else:
             print(client_soup.prettify())
 
+
     def check_playwright_installation(self):
         browser_path = Path(os.environ["PLAYWRIGHT_BROWSERS_PATH"])
         chromium_glob = list(browser_path.glob("chromium-*"))
         
         if chromium_glob and any(chromium_glob[0].iterdir()):
             print("Playwright browser check passed.")
-            return
+            return True
 
         print("Playwright browsers missing. Starting automatic installation...")
         try:
@@ -448,7 +457,7 @@ class DataFetcher:
                 try:
                     playwright_main()
                 except SystemExit:
-                    print("Playwright installation finished. Continuing execution...")
+                    pass
                 finally:
                     sys.argv = original_args
             else:
@@ -456,10 +465,19 @@ class DataFetcher:
                     [sys.executable, "-m", "playwright", "install", "chromium"],
                     check=True
                 )
-            
+            payload = {
+                "type": "playwright_installed",
+            }
+            self.ws.send(json.dumps(payload, ensure_ascii=False))
+
             print("Ready to fetch data.")
+            return True
+            
         except Exception as e:
             print(f"Error during automatic installation: {e}")
+            error_payload = {"type": "error", "message": f"Playwright failed: {str(e)}"}
+            self.ws.send(json.dumps(error_payload))
+            return False
 
     # e.g. xpath = /html/body/form/center/table[2]/tr[1]/th/span then returns 1 (tr[1])
     def xpath_to_tr_index(self, xpath: str):

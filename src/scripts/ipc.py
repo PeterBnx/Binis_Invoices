@@ -66,7 +66,7 @@ def main():
             ws.send(json_payload)
             return
         
-        dataFetcher = DataFetcher(credentials)
+        dataFetcher = DataFetcher(credentials, ws)
 
         if sys.argv[1] == "get_orders":
             dataFetcher.fetch_all_orders()

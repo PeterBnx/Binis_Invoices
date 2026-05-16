@@ -30,7 +30,10 @@ function Orders() {
       else if (message.type === "empty_credentials") {
         alert('Παρακαλώ ενημερώστε τους κωδικούς σας.')
         setSettingsView(true);
-      } 
+      }
+      else if (message.type === "playwright_installed") {
+        onReloadClick();
+      }
       else return;
       });
     return unsubscribe;

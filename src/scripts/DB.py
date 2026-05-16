@@ -36,7 +36,7 @@ class DB:
         if row_count == 0:
             self.cursor.execute("""
                 INSERT INTO CREDS ( Emp_Name, Emp_Password, Cis_Name, Cis_Password )
-                VALUES (None, None, None, None);
+                VALUES ('', '', '', '');
             """)
             self.db_connection.commit()
 
