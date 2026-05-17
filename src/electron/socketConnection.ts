@@ -78,9 +78,9 @@ export function stopServer(): boolean {
 export function runPythonScript(scriptName: string, args: string[] = [], data = null) {
   const isPackaged = app.isPackaged;
 
-  const exePath = isPackaged
+  const exePath = app.isPackaged
     ? path.join(process.resourcesPath, 'bin', 'ipc.exe')
-    : 'python';
+    : path.join(process.cwd(), 'dist', 'ipc', 'ipc.exe');
 
   const spawnArgs = isPackaged 
     ? [...args] 
