@@ -47,4 +47,5 @@ jobs:
           PASSWORD: ${{ secrets.PASSWORD }} 
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_USER_EMAIL: ${{ secrets.VITE_USER_EMAIL }}
         run: npm run publish
