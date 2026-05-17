@@ -40,6 +40,10 @@ jobs:
 
       - name: Build React UI Frontend
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_USER_EMAIL: ${{ secrets.VITE_USER_EMAIL }}
 
       - name: Build and Publish Electron Installer
         env:
