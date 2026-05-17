@@ -69,7 +69,7 @@ class InvoiceExtractor:
             print("Starting Playwright...")
             self.playwright = sync_playwright().start()
             print("Launching Chromium...")
-            self.browser = self.playwright.chromium.launch(headless=False, args=[
+            self.browser = self.playwright.chromium.launch(headless=True, args=[
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-gpu',
@@ -129,7 +129,8 @@ class InvoiceExtractor:
 
                 try:
                     page.locator('#MainContent_LLinkid_DDD_PW-1').wait_for(state='visible', timeout=5000)
-                except:
+                except Exception as e:
+                    print(f"Making products drop down visible: {e}")
                     page.evaluate("""
                         const dropdown = document.querySelector('#MainContent_LLinkid_DDD_PW-1');
                         if (dropdown) {
@@ -171,16 +172,13 @@ class InvoiceExtractor:
                 print(f"Found {len(dropdown_codes)} dropdown matches. Selecting best match...")
                 correct_code_string = len(prod_codes[index])
                 dropdown_code_selection = None
-                dropdown_price_selection = prod_prices[index]
                 for i in range(len(dropdown_codes)):
                     if len(dropdown_codes[i].inner_text()) == correct_code_string:
                         dropdown_code_selection = dropdown_codes[i]
                         correct_code_string = dropdown_codes[i].inner_text()
-                        dropdown_price_selection = dropdown_prices[i].inner_text()
                 
                 if dropdown_code_selection is None and len(dropdown_codes) > 0:
                     dropdown_code_selection = dropdown_codes[0]
-                    dropdown_price_selection = dropdown_prices[0].inner_text() if len(dropdown_prices) > 0 else prod_prices[index]
                 
                 if dropdown_code_selection is None:
                     print(f"ERROR: No valid dropdown selection for {prod_codes[index]}")
@@ -228,9 +226,20 @@ class InvoiceExtractor:
             page.locator('#MainContent_LLinkid0_DDD_L_LBI5T0').click()
 
             print(f"Setting shipping tax: {shipping_tax}")
-            page.locator('#igtxtMainContent_Lprice0').fill(str(shipping_tax).replace('.', ','))
-            page.locator('#igtxtMainContent_Lquant0').fill('1')
-            page.locator('#MainContent_BtLineIN').click()
+            try:
+                page.locator('#igtxtMainContent_Lprice0').fill(str(shipping_tax).replace('.', ','))
+            except Exception as e:
+                print(f"Error in locator #igtxtMainContent_Lprice0: {e}")
+            
+            try:
+                page.locator('#igtxtMainContent_Lquant0').fill('1')
+            except Exception as e:
+                print(f"Error in locator #igtxtMainContent_Lquant0: {e}")
+            sleep(0.1)
+            try:
+                page.locator('#MainContent_BtLineIN').click()
+            except Exception as e:
+                print(f"Error in locator #MainContent_BtLineIN: {e}")
             
             print("Finalizing document...")
             page.locator('#MainContent_Button5').click()
@@ -244,9 +253,10 @@ class InvoiceExtractor:
             ws.send(json_payload)
 
         except Exception as e:
-            print(f"CRASH in make_invoice: {e}")
+            print(f"CRASH in invoice extraction: {e}")
             payload = {
-                "type": "invoice_extraction_error"
+                "type": "invoice_extraction_error",
+                "data": str(e)
             }
             json_payload = json.dumps(payload, ensure_ascii=False)
             ws.send(json_payload)

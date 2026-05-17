@@ -118,6 +118,17 @@ function ProductsOfOrder() {
                 setIsExtracting(true);
                 setExtractionFinished(true);
             }
+            else if (message.type === 'invoice_extraction_error') {
+                window.api.invoke('show_message_dialog', {
+                    type: 'error',
+                    title: 'Binis Invoices',
+                    message: 'Πρόβλημα στην Εξαγωγή Τιμολογίου',
+                    detail: message.data
+                }).then(() => {
+                    onCloseExtractingWindow();
+                });
+                return;
+            }
             else return;
         });
 
@@ -213,7 +224,14 @@ function ProductsOfOrder() {
         const missingProducts = productsData.filter(p => !p.isRegistered);
         if (missingProducts.length === 0) {
             console.log(`Missing  ${missingProducts.length}  products`)
-            alert("Όλα τα είδη είναι καταχωρημένα.")
+            window.api.invoke('show_message_dialog', {
+                type: 'info',
+                title: 'Binis Invoices',
+                message: 'Καταχωρημένα Είδη',
+                detail: 'Όλα τα είδη είναι καταχωρημένα. Μπορείτε να προχωρήσετε σε εξαγωγή του τιμολογίου.'
+                }).then(() => {
+                    return;
+            });
             return;
         }
         setProductsToRegister(missingProducts);
@@ -244,8 +262,15 @@ function ProductsOfOrder() {
             return;
         }
         if (productsToUse.length === 0) {
+            window.api.invoke('show_message_dialog', {
+                type: 'warning',
+                title: 'Binis Invoices',
+                message: 'Μηδενικός Αριθμός Προϊόντων',
+                detail: 'Δεν υπάρχουν προϊόντα για εξαγωγή. Ελέγξτε τις ποσότητες για κάθε είδος.'
+            }).then(() => {
+                return;
+            });
             alert("Δεν υπάρχουν προϊόντα για εξαγωγή. Ελέγξτε τις ποσότητες για κάθε είδος.");
-            return;
         }
 
         setIsExtracting(true);
@@ -291,10 +316,7 @@ function ProductsOfOrder() {
         return (
             <main className="h-screen w-screen flex flex-col items-center justify-center bg-[var(--bg-dark)]">
                 <div className="relative flex items-center justify-center">
-                    {/* Outer Ring */}
                     <div className="w-20 h-20 border-4 border-[var(--border-muted)] rounded-full"></div>
-                    
-                    {/* Spinning Top Ring */}
                     <div className="absolute w-20 h-20 border-4 border-t-[var(--primary)] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
                     
                 </div>
@@ -501,7 +523,7 @@ function ProductsOfOrder() {
                                     <IoInformationCircleOutline />
                                 </span>
                                 <p className="text-[11px] text-[var(--text-muted)] leading-tight flex-1">
-                                    Η διαδικασία είναι αυτοματοποιημένη. Παρακαλώ μην ανανεώσετε τη σελίδα μέχρι να ολοκληρωθεί η καταχώρηση των ειδών.
+                                    Η διαδικασία είναι αυτοματοποιημένη. Παρακαλώ περιμένετε μέχρι να ολοκληρωθεί η καταχώρηση των ειδών.
                                 </p>
                                 
                                 {/* The Close Button */}
@@ -617,7 +639,7 @@ function ProductsOfOrder() {
                                         για να προχωρήσετε σε καταχώρηση.
                                         </>
                                     ) : (
-                                        `Η διαδικασία είναι αυτοματοποιημένη. Παρακαλώ μην ανανεώσετε τη σελίδα μέχρι να ολοκληρωθεί η εξαγωγή του τιμολογίου.`
+                                        `Η διαδικασία είναι αυτοματοποιημένη. Παρακαλώ περιμένετε μέχρι να ολοκληρωθεί η εξαγωγή του τιμολογίου.`
                                     )}
                                     </p>
                                 

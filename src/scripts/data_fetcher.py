@@ -200,6 +200,11 @@ class DataFetcher:
 
         if len(order_codes) == 0:
             print(f"DEBUG: HTML Snippet: {response.text[:500]}")
+            if "il Login" in response.text[:500]:
+                payload = {
+                    "type": "wrong_credentials",
+                }
+                self.ws.send(json.dumps(payload, ensure_ascii=False))
             return False
         
         for order, client, date, price in zip(order_codes, client_elements, date_elements, price_elements):

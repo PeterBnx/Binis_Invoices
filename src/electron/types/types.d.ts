@@ -64,6 +64,10 @@ declare global {
       args: void;
       return: boolean;
     };
+    show_message_dialog: {
+      args: ErrorDialogConfig;
+      return: Promise<Electron.MessageBoxReturnValue>;
+    };
   }
 }
 

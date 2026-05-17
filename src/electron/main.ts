@@ -11,7 +11,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let mainWindow: BrowserWindow | null = null;
-let splashWindow: BrowserWindow | null = null;
 
 if (!isDev()) {
   Menu.setApplicationMenu(null);
@@ -24,19 +23,6 @@ async function createMainWindow() {
     // } else {
     //   mainWindow.loadURL('http://localhost:5173');
     // }
-
-    // splashWindow = new BrowserWindow({
-    //   width: 500,
-    //   height: 300,
-    //   frame: false,
-    //   transparent: true,
-    //   alwaysOnTop: true,
-    //   resizable: false,
-    //   show: false
-    // });
-
-    // await splashWindow.loadFile(splashPath);
-    // splashWindow.show();
 
     mainWindow = new BrowserWindow({
       width: 1300,
@@ -64,13 +50,9 @@ async function createMainWindow() {
 
     mainWindow.show();
     mainWindow.webContents.openDevTools();
-    // splashWindow.destroy();
-    // splashWindow = null;
 
   } catch (err) {
     console.error('Failed to create main window:', err);
-    splashWindow?.destroy();
-    splashWindow = null;
   }
 }
 

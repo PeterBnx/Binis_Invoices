@@ -29,8 +29,23 @@ function Orders() {
         }
       } 
       else if (message.type === "empty_credentials") {
-        // alert('Παρακαλώ ενημερώστε τους κωδικούς σας.')
-        setSettingsView(true);
+        window.api.invoke('show_message_dialog', {
+          title: 'Λείπουν στοιχεία σύνδεσης',
+          message: 'Λείπουν στοιχεία σύνδεσης',
+          detail: 'Εισάγετε στοιχεία σύνδεσης για το emporiorologion και το LiveCIS.'
+        }).then(() => {
+          setSettingsView(true);
+        });
+      }
+      else if (message.type === "wrong_credentials") {
+        window.api.invoke('show_message_dialog', {
+          type: 'error',
+          title: 'Λανθασμένα στοιχεία σύνδεσης',
+          message: 'Λανθασμένα στοιχεία σύνδεσης',
+          detail: 'Το username ή ο κωδικός για το emporiorologion είναι λάθος.'
+        }).then(() => {
+          setSettingsView(true);
+        });
       }
       else if (message.type === "playwright_installed") {
         onReloadClick();

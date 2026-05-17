@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { BrowserWindow, ipcMain } from "electron";
+import { BrowserWindow, dialog, ipcMain } from "electron";
 import { runPythonScript, startServer } from "../socketConnection.js";
 import * as dotenv from 'dotenv';
 import path from 'path';
@@ -49,6 +49,17 @@ export function register(win: BrowserWindow) {
     ipcMain.handle('get_credentials', async(_event, creds) => {
         runPythonScript('ipc.py', ['get_credentials'], null);
         return true;
+    });
+
+    ipcMain.handle('show_message_dialog', async (event, config) => {
+        return await dialog.showMessageBox({
+            type: config.type,
+            buttons: ['OK'],
+            defaultId: 0,
+            title: config.title,
+            message: config.message,
+            detail: config.detail,
+        });
     });
 }
 
