@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Menu } from 'electron';
 import path from 'path';
 import { isDev, setMainWindow } from './util.js';
-import { getPreloadPath } from './pathResolver.js';
+import { getAssetsPath, getPreloadPath } from './pathResolver.js';
 import { registerAllIpcHandlers } from './ipcHandlers/index.js';
 import { fileURLToPath } from 'url';
 import pkg from 'electron-updater';
@@ -29,6 +29,7 @@ async function createMainWindow() {
       height: 700,
       minWidth: 600,
       minHeight: 500,
+      icon: path.join(getAssetsPath(), 'binis_logo.png'),
       show: false,
       webPreferences: {
         preload: getPreloadPath(),

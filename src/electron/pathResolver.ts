@@ -16,3 +16,10 @@ export function getScriptsPath() {
   }
   return path.join(process.resourcesPath, 'bin');
 }
+
+export function getAssetsPath() {
+  if (!isPackaged) {
+    return path.join(app.getAppPath(), 'src', 'ui', 'assets');
+  }
+  return path.join(app.getAppPath(), 'dist', 'assets');
+}

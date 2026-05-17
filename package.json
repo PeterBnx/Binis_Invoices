@@ -78,13 +78,24 @@
       "to": "bin/ms-playwright"
     }
   ],
-  "build": {
+ "build": {
     "appId": "com.peterbnx.binis-invoices",
+    "productName": "Binis Invoices",
     "files": [
       "dist-electron/**/*",
       "dist-react/**/*",
-      "package.json"
+      "package.json",
+      "src/ui/assets/**/*"
     ],
+    "win": {
+      "icon": "src/ui/assets/binis_logo.ico"
+    },
+    "mac": {
+      "icon": "src/ui/assets/binis_logo.icns"
+    },
+    "linux": {
+      "icon": "src/ui/assets/binis_logo.png"
+    },
     "extraResources": [
       {
         "from": "dist/ipc/",
