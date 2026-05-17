@@ -50,7 +50,7 @@ async function createMainWindow() {
     }
 
     mainWindow.show();
-    // mainWindow.webContents.openDevTools();
+    mainWindow.webContents.openDevTools();
 
   } catch (err) {
     console.error('Failed to create main window:', err);
