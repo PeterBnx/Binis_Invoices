@@ -18,11 +18,13 @@ if (!isDev()) {
 
 async function createMainWindow() {
   try {
-    // if (app.isPackaged) {
-    //   mainWindow.loadFile(path.join(app.getAppPath(), 'dist-react', 'index.html'));
-    // } else {
-    //   mainWindow.loadURL('http://localhost:5173');
-    // }
+    if (mainWindow) {
+      if (app.isPackaged) {
+        mainWindow.loadFile(path.join(app.getAppPath(), 'dist-react', 'index.html'));
+      } else {
+        mainWindow.loadURL('http://localhost:5173');
+      }
+    }
 
     mainWindow = new BrowserWindow({
       width: 1300,
